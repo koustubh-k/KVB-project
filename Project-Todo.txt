@@ -1,0 +1,487 @@
+1. Functional Requirements
+Authentication & Authorization
+
+Multi-role authentication:
+
+Customer, Worker, Admin, Sales
+
+JWT + HTTP-only cookies for secure sessions.
+
+Role-based access control:
+
+Customers: Limited to their own data.
+
+Workers: Task/project location only (no customer data).
+
+Sales team: Access to potential customers & leads.
+
+Admin: Full access to all entities.
+
+Customer Portal (CRM)
+
+View public product catalog.
+
+Product details with pricing/specifications when logged in.
+
+Request quotations (pre-deal details).
+
+Submit inquiries for sales follow-up.
+
+View past projects linked to their profile.
+
+Sales Team
+
+Manage potential customers:
+
+Track leads across regions (North, South, East, West, Central).
+
+Follow-up system:
+
+Gmail integration (send re-check emails directly).
+
+Track status: new, contacted, follow-up pending, closed.
+
+Convert inquiry → quotation → production → installation (business cycle).
+
+Admin Dashboard
+
+Manage customers, workers, sales team, products, and tasks.
+
+View:
+
+Active customers (with ongoing projects).
+
+Potential customers (signed up, browsing products).
+
+Sales pipeline (quotations, deals).
+
+Import products/tasks via Excel upload.
+
+Full CRUD for products with auto-fill in tasks.
+
+Worker Dashboard
+
+Jira-style Kanban task board:
+
+Columns: Pending, In Progress, Completed, Cancelled.
+
+Project location display (map or text).
+
+Real-time updates.
+
+Comment system for updates.
+
+Priority indicators (low, medium, high, overdue).
+
+Tasks Management
+
+Create, assign, and track tasks.
+
+Product autofill when task relates to a product.
+
+Excel bulk upload for tasks and products.
+
+Real-time updates with WebSockets/React Query polling.
+
+2. Non-Functional Requirements
+
+Scalability: Backend APIs & frontend UI should handle thousands of concurrent users.
+
+Security:
+
+JWT + HTTP-only cookies for authentication.
+
+Input validation & sanitization.
+
+Role-based middleware.
+
+Performance:
+
+API response < 200ms average.
+
+React Query caching for API calls.
+
+Reliability:
+
+Auto-refresh and optimistic UI updates.
+
+Retry mechanism for failed API calls.
+
+Usability:
+
+Mobile-first responsive design.
+
+Accessible UI (WCAG compliance).
+
+Maintainability:
+
+Modular file structure.
+
+TypeScript types for API & frontend.
+
+Clear separation of controllers, models, and routes.
+
+3. Project Structure – Server (Backend)
+
+Tech Stack:
+
+Node.js + Express
+
+MongoDB + Mongoose
+
+JWT Authentication
+
+Multer/Cloudinary (image uploads)
+
+ExcelJS / Papaparse (Excel/CSV import)
+
+KVBserver/
+├── index.js                 # Entry point, Express app setup
+├── package.json             # Dependencies
+│
+├── controllers/             # Business logic
+│   ├── admin.auth.controller.js
+│   ├── admin.controller.js
+│   ├── auth.controller.js
+│   ├── customer.auth.controller.js
+│   ├── product.controller.js
+│   ├── task.controller.js
+│   ├── worker.auth.controller.js
+│   └── sales.controller.js          # NEW: sales team logic
+│
+├── lib/                     
+│   ├── cloudinary.js        # Image uploads
+│   ├── db.js                # MongoDB connection
+│   └── generateToken.js     # JWT generator
+│
+├── middleware/
+│   ├── authMiddleware.js
+│   ├── customerAuthMiddleware.js
+│   ├── protectRoute.js
+│   ├── validation.js
+│   └── roleMiddleware.js             # NEW: role-based access
+│
+├── models/
+│   ├── admin.model.js
+│   ├── customer.model.js
+│   ├── worker.model.js
+│   ├── sales.model.js               # NEW: sales schema
+│   ├── product.model.js
+│   ├── task.model.js
+│   └── quotation.model.js           # NEW: quotations
+│
+├── routes/
+│   ├── admin.auth.route.js
+│   ├── admin.route.js
+│   ├── auth.route.js
+│   ├── customer.auth.route.js
+│   ├── product.route.js
+│   ├── task.route.js
+│   ├── worker.auth.route.js
+│   └── sales.route.js               # NEW: sales API endpoints
+│
+├── seeds/
+│   └── seedData.js
+└── utils/
+    ├── excelParser.js               # NEW: handle Excel uploads
+    ├── emailService.js              # Gmail integration
+    └── logger.js
+
+4. Project Structure – Frontend
+
+Tech Stack:
+
+React 18 + TypeScript
+
+Tailwind CSS
+
+React Router DOM
+
+React Query (data fetching & caching)
+
+React Hook Form (form handling)
+
+React Beautiful DnD (Kanban board)
+
+Axios (API calls)
+
+XLSX / SheetJS (Excel file parsing)
+
+Google API Client (Gmail integration)
+
+KVB-frontend/
+├── src/
+│   ├── components/          
+│   │   ├── admin/           
+│   │   │   ├── CustomerTable.tsx
+│   │   │   ├── WorkerTable.tsx
+│   │   │   ├── ProductManager.tsx
+│   │   │   ├── TaskManager.tsx
+│   │   │   └── SalesManager.tsx         # NEW
+│   │   ├── worker/          
+│   │   │   ├── KanbanBoard.tsx
+│   │   │   ├── TaskCard.tsx
+│   │   │   └── ProjectLocation.tsx      # NEW
+│   │   ├── sales/                       # NEW
+│   │   │   ├── LeadTable.tsx
+│   │   │   ├── LeadForm.tsx
+│   │   │   └── FollowUpPanel.tsx
+│   │   ├── Navbar.tsx
+│   │   ├── ProtectedRoute.tsx
+│   │   ├── ProductCard.tsx
+│   │   └── ProductModal.tsx
+│   │
+│   ├── contexts/
+│   │   └── AuthContext.tsx
+│   │
+│   ├── lib/
+│   │   ├── api.ts                 # Axios setup
+│   │   ├── excel.ts               # Excel parsing helper
+│   │   └── email.ts               # Gmail API integration
+│   │
+│   ├── pages/
+│   │   ├── AdminDashboard.tsx
+│   │   ├── WorkerDashboard.tsx
+│   │   ├── SalesDashboard.tsx       # NEW
+│   │   ├── CRMPage.tsx
+│   │   ├── QuotationPage.tsx        # NEW
+│   │   ├── LoginPage.tsx
+│   │   ├── SignupPage.tsx
+│   │   └── LandingPage.tsx
+│   │
+│   ├── types/
+│   │   ├── index.ts
+│   │   ├── product.ts
+│   │   ├── task.ts
+│   │   └── sales.ts                 # NEW
+│   │
+│   ├── App.tsx
+│   ├── main.tsx
+│   └── index.css
+│
+├── public/
+│   └── assets/ (logos, images)
+│
+└── .env
+
+
+✅ With this structure:
+
+Server cleanly separates controllers, models, routes, middleware, utils.
+
+Frontend organizes code by role-based dashboards, reusable components, and shared libs.
+
+Supports future scalability (adding more roles/features is straightforward).
+
+API to Frontend Component Mapping
+1. Authentication
+
+Backend Routes
+
+POST /api/customer-auth/signup
+
+POST /api/customer-auth/login
+
+POST /api/worker-auth/login
+
+POST /api/admin-auth/login
+
+POST /api/sales-auth/login (future)
+
+POST /api/logout
+
+Frontend Components
+
+pages/LoginPage.tsx → Calls api.customerAuth.login(), api.workerAuth.login(), etc.
+
+pages/SignupPage.tsx → Calls api.customerAuth.signup()
+
+contexts/AuthContext.tsx → Manages login state, role-based auth, refresh/logout.
+
+components/ProtectedRoute.tsx → Blocks unauthorized routes.
+
+2. Products
+
+Backend Routes
+
+GET /api/products → Get all products
+
+GET /api/products/:id → Product details
+
+POST /api/products → Add product (Admin)
+
+PUT /api/products/:id → Update product (Admin)
+
+DELETE /api/products/:id → Delete product (Admin)
+
+POST /api/products/upload-excel → Bulk upload
+
+Frontend Components
+
+components/ProductCard.tsx → Display product in grid/list.
+
+components/ProductModal.tsx → Product details modal.
+
+pages/CRMPage.tsx → Customer product catalog.
+
+components/admin/ProductManager.tsx → Full CRUD UI (Admin).
+
+lib/excel.ts → Parses Excel before upload.
+
+3. Tasks
+
+Backend Routes
+
+GET /api/tasks → List all tasks (role-based filtering).
+
+GET /api/tasks/:id → Task details.
+
+POST /api/tasks → Create new task (Admin).
+
+PUT /api/tasks/:id → Update status/assignee.
+
+DELETE /api/tasks/:id → Remove task.
+
+POST /api/tasks/upload-excel → Bulk upload tasks.
+
+Frontend Components
+
+components/worker/KanbanBoard.tsx → Drag/drop task statuses.
+
+components/worker/TaskCard.tsx → Single task UI.
+
+components/admin/TaskManager.tsx → Admin CRUD for tasks.
+
+components/worker/ProjectLocation.tsx → Shows project location.
+
+lib/excel.ts → Bulk upload tasks.
+
+4. Customers
+
+Backend Routes
+
+GET /api/customers → All customers (Admin only).
+
+GET /api/customers/:id → Specific customer details.
+
+PUT /api/customers/:id → Update customer profile.
+
+DELETE /api/customers/:id → Remove customer.
+
+Frontend Components
+
+components/admin/CustomerTable.tsx → Displays all customers.
+
+pages/CRMPage.tsx → Customer’s own portal view.
+
+pages/QuotationPage.tsx → Customers request pre-deal details.
+
+5. Workers
+
+Backend Routes
+
+GET /api/workers → All workers (Admin only).
+
+POST /api/worker-auth/signup → Add worker.
+
+POST /api/worker-auth/login → Worker login.
+
+PUT /api/workers/:id → Update worker details.
+
+DELETE /api/workers/:id → Remove worker.
+
+Frontend Components
+
+components/admin/WorkerTable.tsx → Admin management of workers.
+
+pages/WorkerDashboard.tsx → Worker’s Kanban + project location.
+
+6. Sales (Future Feature)
+
+Backend Routes
+
+GET /api/sales/leads → List potential customers.
+
+POST /api/sales/leads → Add lead.
+
+PUT /api/sales/leads/:id → Update lead status (new, follow-up, closed).
+
+POST /api/sales/send-email → Gmail follow-up email.
+
+GET /api/sales/quotations → List quotations.
+
+POST /api/sales/quotations → Create quotation.
+
+PUT /api/sales/quotations/:id → Update quotation status.
+
+Frontend Components
+
+pages/SalesDashboard.tsx → Main sales dashboard.
+
+components/sales/LeadTable.tsx → Display potential customers by region.
+
+components/sales/LeadForm.tsx → Add new lead.
+
+components/sales/FollowUpPanel.tsx → Gmail integration + reminders.
+
+pages/QuotationPage.tsx → Sales → Customer quotation flow.
+
+7. Admin Features
+
+Backend Routes
+
+GET /api/admin/overview → Stats + analytics.
+
+GET /api/admin/customers → Customer list.
+
+GET /api/admin/workers → Worker list.
+
+GET /api/admin/sales → Sales performance.
+
+Frontend Components
+
+pages/AdminDashboard.tsx → Aggregates everything (charts, stats).
+
+components/admin/CustomerTable.tsx
+
+components/admin/WorkerTable.tsx
+
+components/admin/ProductManager.tsx
+
+components/admin/TaskManager.tsx
+
+components/admin/SalesManager.tsx
+
+🔄 API ↔ Component Data Flow Example
+
+👉 Example: Customer requests a product quotation
+
+Customer clicks "Request Quotation" in ProductModal.tsx.
+
+Calls API: POST /api/sales/quotations with {customerId, productId, details}.
+
+Backend saves quotation in quotation.model.js.
+
+Admin sees it in SalesManager.tsx (Admin Dashboard).
+
+Sales team tracks it in QuotationPage.tsx.
+
+👉 Example: Admin bulk uploads products via Excel
+
+Admin uploads file in ProductManager.tsx.
+
+Frontend parses via lib/excel.ts.
+
+Sends to backend: POST /api/products/upload-excel.
+
+Backend parses with utils/excelParser.js & stores in DB.
+
+Products instantly available in CRMPage.tsx and ProductCard.tsx.
+
+✅ This mapping ensures:
+
+Every backend API is tied to a frontend consumer.
+
+Sales workflow (inquiry → quotation → installation) is tracked end-to-end.
+
+Easy to present in a project review because it shows full-stack coverage.

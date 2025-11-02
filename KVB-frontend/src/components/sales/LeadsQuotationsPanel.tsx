@@ -53,7 +53,9 @@ const LeadsQuotationsPanel: React.FC<LeadsQuotationsPanelProps> = ({
                         updateLeadStatus(
                           lead._id,
                           e.target.value,
-                          lead.notes || ""
+                          lead.notes?.length > 0
+                            ? lead.notes.map((n) => n.message).join(", ")
+                            : ""
                         )
                       }
                       defaultValue={lead.status}
@@ -127,7 +129,7 @@ const LeadsQuotationsPanel: React.FC<LeadsQuotationsPanelProps> = ({
                           ? "bg-blue-500 text-white"
                           : quotation.status === "quotation sent"
                             ? "bg-yellow-500 text-black"
-                            : quotation.status === "accepted"
+                            : quotation.status === "converted"
                               ? "bg-green-500 text-white"
                               : "bg-red-500 text-white"
                       }`}

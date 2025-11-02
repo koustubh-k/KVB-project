@@ -70,34 +70,3 @@ export const getProductByIdForCustomer = async (req, res) => {
     res.status(500).json({ error: error.message });
   }
 };
-
-// Bulk upload products from Excel
-export const uploadProductsExcel = async (req, res) => {
-  try {
-    const { parseExcel } = await import("../utils/excelParser.js");
-    const data = await parseExcel(req.file.buffer);
-
-    const products = [];
-    for (const row of data) {
-      const product = new Product({
-        name: row.name,
-        description: row.description,
-        price: row.price,
-        category: row.category,
-        stock: row.stock,
-        specifications: row.specifications
-          ? JSON.parse(row.specifications)
-          : {},
-      });
-      await product.save();
-      products.push(product);
-    }
-
-    res.status(201).json({
-      message: `${products.length} products uploaded successfully`,
-      products,
-    });
-  } catch (error) {
-    res.status(500).json({ error: error.message });
-  }
-};

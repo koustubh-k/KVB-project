@@ -7,37 +7,7 @@ import {
   sendTaskCompletedNotification,
 } from "../utils/emailService.js";
 
-// Bulk upload tasks from Excel
-export const uploadTasksExcel = async (req, res) => {
-  try {
-    const { parseExcel } = await import("../utils/excelParser.js");
-    const data = await parseExcel(req.file.buffer);
-
-    const tasks = [];
-    for (const row of data) {
-      const task = new Task({
-        title: row.title,
-        description: row.description,
-        priority: row.priority,
-        status: row.status,
-        location: row.location,
-        assignedTo: row.assignedTo, // Assuming ID
-        customer: row.customer, // Assuming ID
-        product: row.product, // Assuming ID
-        assignedBy: req.admin._id,
-      });
-      await task.save();
-      tasks.push(task);
-    }
-
-    res.status(201).json({
-      message: `${tasks.length} tasks uploaded successfully`,
-      tasks,
-    });
-  } catch (error) {
-    res.status(500).json({ error: error.message });
-  }
-};
+// Note: Bulk upload moved to admin controller (/api/admin/bulk-import/tasks)
 
 // Worker Controllers
 export const getWorkerTasks = async (req, res) => {
@@ -154,7 +124,10 @@ export const uploadTaskFiles = async (req, res) => {
     // Upload files to Cloudinary if provided
     if (req.files && req.files.length > 0) {
       for (const file of req.files) {
-        const result = await uploadToCloudinary(file.path, "task-attachments");
+        const result = await uploadToCloudinary(
+          file.buffer,
+          "task-attachments"
+        );
         attachments.push({
           filename: file.originalname,
           url: result.secure_url,

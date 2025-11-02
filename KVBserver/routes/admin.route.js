@@ -12,7 +12,13 @@ import {
   deleteWorker,
   getAllSales,
   getAllLeads,
+  getLeadById,
+  updateLead,
+  sendLeadEmail,
   getAllQuotations,
+  getQuotationById,
+  updateQuotation,
+  sendQuotationEmail,
   getAllProducts,
   createProduct,
   updateProduct,
@@ -53,8 +59,18 @@ router.put("/workers/:id", validateId, updateWorker);
 router.delete("/workers/:id", validateId, deleteWorker);
 
 router.get("/sales", getAllSales);
+
+// Individual lead management
 router.get("/leads", getAllLeads);
+router.get("/leads/:id", validateId, getLeadById);
+router.put("/leads/:id", validateId, updateLead);
+router.post("/leads/:id/email", validateId, sendLeadEmail);
+
+// Individual quotation management
 router.get("/quotations", getAllQuotations);
+router.get("/quotations/:id", validateId, getQuotationById);
+router.put("/quotations/:id", validateId, updateQuotation);
+router.post("/quotations/:id/email", validateId, sendQuotationEmail);
 
 router.get("/products", getAllProducts);
 router.post("/products", singleUpload, validateProduct, createProduct);

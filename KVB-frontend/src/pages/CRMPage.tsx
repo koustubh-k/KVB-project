@@ -54,7 +54,7 @@ const CRMPage: React.FC = () => {
   // Fetch customer projects/enquiries
   const { data: projects } = useQuery(
     "customer-projects",
-    () => customerAPI.getProjects().then((res) => res.data),
+    () => customerAPI.getProjects().then((res) => res.data.projects),
     {
       enabled: isCustomer && activeTab === "projects",
     }

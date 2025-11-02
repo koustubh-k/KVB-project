@@ -250,18 +250,7 @@ const CustomersTab: React.FC = () => {
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
                       <div className="flex items-center justify-end space-x-2">
-                        <button
-                          className="text-blue-400 hover:text-blue-300 p-1"
-                          title="View Customer"
-                        >
-                          <Eye className="w-4 h-4" />
-                        </button>
-                        <button
-                          className="text-yellow-400 hover:text-yellow-300 p-1"
-                          title="Edit Customer"
-                        >
-                          <Edit className="w-4 h-4" />
-                        </button>
+                        {/* View and Edit functionality can be implemented later */}
                         <button
                           className="text-red-400 hover:text-red-300 p-1"
                           title="Delete Customer"

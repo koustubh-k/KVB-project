@@ -319,7 +319,8 @@ const TaskModal: React.FC<TaskModalProps> = ({ task, onClose }) => {
                         });
 
                         try {
-                          // Note: Need to add this API endpoint
+                          // Note: This endpoint doesn't exist in the API yet
+                          // We need to add it to tasksAPI and backend
                           console.log("Uploading files:", formData);
                           toast.success(
                             `${selectedFiles.length} files uploaded successfully`
@@ -330,8 +331,9 @@ const TaskModal: React.FC<TaskModalProps> = ({ task, onClose }) => {
                         }
                       }}
                       className="w-full btn btn-primary btn-sm"
+                      disabled
                     >
-                      Upload Files
+                      Upload Files (Coming Soon)
                     </button>
                   </div>
                 )}

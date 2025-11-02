@@ -3,7 +3,7 @@ import { useQuery, useMutation, useQueryClient } from "react-query";
 import { Plus, Search, Edit, Trash2, Mail, Eye } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
 import { Lead, Quotation } from "@/types";
-import { salesAPI } from "@/lib/api";
+import { adminAPI } from "@/lib/api";
 import toast from "react-hot-toast";
 
 const SalesTab: React.FC = () => {
@@ -20,7 +20,7 @@ const SalesTab: React.FC = () => {
     isLoading: leadsLoading,
     error: leadsError,
   } = useQuery<Lead[]>("admin-leads", () =>
-    salesAPI.getLeads().then((res) => res.data)
+    adminAPI.getAllLeads().then((res) => res.data)
   );
 
   // Fetch quotations
@@ -29,12 +29,12 @@ const SalesTab: React.FC = () => {
     isLoading: quotationsLoading,
     error: quotationsError,
   } = useQuery<Quotation[]>("admin-quotations", () =>
-    salesAPI.getQuotations().then((res) => res.data)
+    adminAPI.getAllQuotations().then((res) => res.data)
   );
 
-  // Delete lead mutation
+  // Delete lead mutation (soft delete by updating status)
   const deleteLeadMutation = useMutation(
-    (leadId: string) => salesAPI.updateLead(leadId, { status: "deleted" }),
+    (leadId: string) => adminAPI.updateLead(leadId, { status: "deleted" }),
     {
       onSuccess: () => {
         queryClient.invalidateQueries("admin-leads");
@@ -46,10 +46,10 @@ const SalesTab: React.FC = () => {
     }
   );
 
-  // Delete quotation mutation
+  // Delete quotation mutation (cancel by updating status)
   const deleteQuotationMutation = useMutation(
     (quotationId: string) =>
-      salesAPI.updateQuotation(quotationId, { status: "cancelled" }),
+      adminAPI.updateQuotation(quotationId, { status: "cancelled" }),
     {
       onSuccess: () => {
         queryClient.invalidateQueries("admin-quotations");
@@ -61,17 +61,32 @@ const SalesTab: React.FC = () => {
     }
   );
 
-  // Generic send email mutation
-  const sendEmailMutation = useMutation(
-    (data: { to: string; subject: string; text: string; html?: string }) =>
-      salesAPI.sendFollowUpEmail(data),
+  // Send lead email mutation
+  const sendLeadEmailMutation = useMutation(
+    ({ leadId, emailData }: { leadId: string; emailData: any }) =>
+      adminAPI.sendLeadEmail(leadId, emailData),
     {
       onSuccess: () => {
-        toast.success("Email sent successfully");
+        toast.success("Email sent successfully to lead");
       },
       onError: (error) => {
-        console.error("Failed to send email:", error);
-        toast.error("Failed to send email");
+        console.error("Failed to send email to lead:", error);
+        toast.error("Failed to send email to lead");
+      },
+    }
+  );
+
+  // Send quotation email mutation
+  const sendQuotationEmailMutation = useMutation(
+    ({ quotationId, emailData }: { quotationId: string; emailData: any }) =>
+      adminAPI.sendQuotationEmail(quotationId, emailData),
+    {
+      onSuccess: () => {
+        toast.success("Email sent successfully about quotation");
+      },
+      onError: (error) => {
+        console.error("Failed to send quotation email:", error);
+        toast.error("Failed to send quotation email");
       },
     }
   );
@@ -86,41 +101,43 @@ const SalesTab: React.FC = () => {
 
   const filteredQuotations = (quotations || []).filter(
     (quotation) =>
-      quotation.customerId.fullName
+      (quotation.customerId?.fullName || "")
         .toLowerCase()
         .includes(searchTerm.toLowerCase()) ||
-      quotation.productId.name.toLowerCase().includes(searchTerm.toLowerCase())
+      (quotation.productId?.name || "")
+        .toLowerCase()
+        .includes(searchTerm.toLowerCase())
   );
 
   const getStatusColor = (status: string) => {
     switch (status) {
       case "new":
-        return "bg-blue-100 text-blue-800";
+        return "bg-blue-500 text-white";
       case "contacted":
-        return "bg-yellow-100 text-yellow-800";
+        return "bg-yellow-500 text-black";
       case "follow-up pending":
-        return "bg-orange-100 text-orange-800";
+        return "bg-orange-500 text-white";
       case "converted":
-        return "bg-green-100 text-green-800";
+        return "bg-green-500 text-white";
       default:
-        return "bg-gray-100 text-gray-800";
+        return "bg-gray-500 text-white";
     }
   };
 
   const getQuotationStatusColor = (status: string) => {
     switch (status) {
       case "new":
-        return "bg-blue-100 text-blue-800";
+        return "bg-blue-500 text-white";
       case "contacted":
-        return "bg-yellow-100 text-yellow-800";
+        return "bg-yellow-500 text-black";
       case "quotation sent":
-        return "bg-purple-100 text-purple-800";
+        return "bg-purple-500 text-white";
       case "closed":
-        return "bg-red-100 text-red-800";
+        return "bg-red-500 text-white";
       case "converted":
-        return "bg-green-100 text-green-800";
+        return "bg-green-500 text-white";
       default:
-        return "bg-gray-100 text-gray-800";
+        return "bg-gray-500 text-white";
     }
   };
 
@@ -149,16 +166,24 @@ const SalesTab: React.FC = () => {
 
   const handleSendLeadEmail = (lead: Lead) => {
     const subject = `Follow-up regarding your enquiry - KVB Green Energies`;
-    const text = `Dear ${lead.name},\n\nThank you for your interest in our products. We'd like to follow up on your recent enquiry.\n\nPlease let us know if you have any questions or need further information.\n\nBest regards,\nKVB Sales Team`;
+    const message = `Dear ${lead.name},\n\nThank you for your interest in our products. We'd like to follow up on your recent enquiry.\n\nPlease let us know if you have any questions or need further information.\n\nBest regards,\nKVB Sales Team`;
 
-    sendEmailMutation.mutate({ to: lead.email, subject, text });
+    sendLeadEmailMutation.mutate({
+      leadId: lead._id,
+      emailData: { subject, message },
+    });
   };
 
   const handleSendQuotationEmail = (quotation: Quotation) => {
-    const subject = `Quotation for ${quotation.productId.name} (ID: ${quotation._id}) - KVB Green Energies`;
-    const text = `Dear ${quotation.customerId.fullName},\n\nPlease find attached your quotation for ${quotation.productId.name}.\n\nDetails:\nProduct: ${quotation.productId.name}\nPrice: ${formatPrice(quotation.price)}\nStatus: ${quotation.status}\n\nWe look forward to hearing from you.\n\nBest regards,\nKVB Sales Team`;
+    const customerName = quotation.customerId?.fullName || "Customer";
+    const productName = quotation.productId?.name || "Product";
+    const subject = `Quotation for ${productName} (ID: ${quotation._id}) - KVB Green Energies`;
+    const message = `Dear ${customerName},\n\nPlease find attached your quotation for ${productName}.\n\nDetails:\nProduct: ${productName}\nPrice: ${formatPrice(quotation.price)}\nStatus: ${quotation.status}\n\nWe look forward to hearing from you.\n\nBest regards,\nKVB Sales Team`;
 
-    sendEmailMutation.mutate({ to: quotation.customerId.email, subject, text });
+    sendQuotationEmailMutation.mutate({
+      quotationId: quotation._id,
+      emailData: { subject, message },
+    });
   };
 
   return (
@@ -297,7 +322,7 @@ const SalesTab: React.FC = () => {
                           className="text-green-400 hover:text-green-300 p-1"
                           title="Send Email"
                           onClick={() => handleSendLeadEmail(lead)}
-                          disabled={sendEmailMutation.isLoading}
+                          disabled={sendLeadEmailMutation.isLoading}
                         >
                           <Mail className="w-4 h-4" />
                         </button>
@@ -345,15 +370,15 @@ const SalesTab: React.FC = () => {
                   <tr key={quotation._id} className="hover:bg-gray-700">
                     <td className="px-6 py-4 whitespace-nowrap">
                       <div className="text-sm font-medium text-white">
-                        {quotation.customerId.fullName}
+                        {quotation.customerId?.fullName || "No Customer"}
                       </div>
                       <div className="text-sm text-gray-300">
-                        {quotation.customerId.email}
+                        {quotation.customerId?.email || "N/A"}
                       </div>
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap">
                       <div className="text-sm text-white">
-                        {quotation.productId.name}
+                        {quotation.productId?.name || "No Product"}
                       </div>
                       <div className="text-sm text-gray-300">
                         {quotation.details}
@@ -391,7 +416,7 @@ const SalesTab: React.FC = () => {
                           className="text-green-400 hover:text-green-300 p-1"
                           title="Send Email"
                           onClick={() => handleSendQuotationEmail(quotation)}
-                          disabled={sendEmailMutation.isLoading}
+                          disabled={sendQuotationEmailMutation.isLoading}
                         >
                           <Mail className="w-4 h-4" />
                         </button>
@@ -401,7 +426,7 @@ const SalesTab: React.FC = () => {
                           onClick={() =>
                             handleDeleteQuotation(
                               quotation._id,
-                              quotation.customerId.fullName
+                              quotation.customerId?.fullName || "Customer"
                             )
                           }
                           disabled={deleteQuotationMutation.isLoading}

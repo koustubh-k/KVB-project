@@ -11,14 +11,14 @@ interface Task {
   status: string;
   location: string;
   dueDate: string;
-  assignedTo: {
+  assignedTo?: {
     _id: string;
     fullName: string;
-  };
-  customer: {
+  } | null;
+  customer?: {
     _id: string;
     fullName: string;
-  };
+  } | null;
   product?: {
     _id: string;
     name: string;
@@ -62,15 +62,15 @@ const TaskManager: React.FC = () => {
   const getStatusColor = (status: string) => {
     switch (status.toLowerCase()) {
       case "pending":
-        return "bg-yellow-100 text-yellow-800";
+        return "bg-yellow-500 text-black";
       case "in-progress":
-        return "bg-blue-100 text-blue-800";
+        return "bg-blue-500 text-white";
       case "completed":
-        return "bg-green-100 text-green-800";
+        return "bg-green-500 text-white";
       case "cancelled":
-        return "bg-red-100 text-red-800";
+        return "bg-red-500 text-white";
       default:
-        return "bg-gray-100 text-gray-800";
+        return "bg-gray-500 text-white";
     }
   };
 
@@ -78,7 +78,12 @@ const TaskManager: React.FC = () => {
     (task) =>
       task.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
       task.location.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      task.customer.fullName.toLowerCase().includes(searchTerm.toLowerCase())
+      (task.customer?.fullName || "")
+        .toLowerCase()
+        .includes(searchTerm.toLowerCase()) ||
+      (task.assignedTo?.fullName || "")
+        .toLowerCase()
+        .includes(searchTerm.toLowerCase())
   );
 
   if (loading) {
@@ -149,8 +154,12 @@ const TaskManager: React.FC = () => {
                 >
                   <td className="px-4 py-3">{task.title}</td>
                   <td className="px-4 py-3">{task.location}</td>
-                  <td className="px-4 py-3">{task.assignedTo.fullName}</td>
-                  <td className="px-4 py-3">{task.customer.fullName}</td>
+                  <td className="px-4 py-3">
+                    {task.assignedTo?.fullName || "Unassigned"}
+                  </td>
+                  <td className="px-4 py-3">
+                    {task.customer?.fullName || "No Customer"}
+                  </td>
                   <td className="px-4 py-3">
                     {new Date(task.dueDate).toLocaleDateString()}
                   </td>

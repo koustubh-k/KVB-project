@@ -236,9 +236,89 @@ export const getAllSales = async (req, res) => {
 // @access  Private (Admin)
 export const getAllLeads = async (req, res) => {
   try {
-    const leads = await Lead.find().populate("assignedTo", "fullName");
+    const leads = await Lead.find()
+      .populate("assignedTo", "fullName")
+      .populate("notes.addedBy", "fullName email");
     res.status(200).json(leads);
   } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+};
+
+// @desc    Get lead by ID
+// @route   GET /api/admin/leads/:id
+// @access  Private (Admin)
+export const getLeadById = async (req, res) => {
+  try {
+    const lead = await Lead.findById(req.params.id)
+      .populate("assignedTo", "fullName email")
+      .populate("customerId", "fullName email phone")
+      .populate("notes.addedBy", "fullName email");
+
+    if (!lead) {
+      return res.status(404).json({ error: "Lead not found" });
+    }
+
+    res.status(200).json(lead);
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+};
+
+// @desc    Update lead
+// @route   PUT /api/admin/leads/:id
+// @access  Private (Admin)
+export const updateLead = async (req, res) => {
+  try {
+    const { name, email, phone, region, source, status, assignedTo } = req.body;
+
+    const lead = await Lead.findByIdAndUpdate(
+      req.params.id,
+      {
+        name,
+        email,
+        phone,
+        region,
+        source,
+        status,
+        assignedTo,
+      },
+      { new: true, runValidators: true }
+    )
+      .populate("assignedTo", "fullName email")
+      .populate("customerId", "fullName email phone")
+      .populate("notes.addedBy", "fullName email");
+
+    if (!lead) {
+      return res.status(404).json({ error: "Lead not found" });
+    }
+
+    res.status(200).json(lead);
+  } catch (error) {
+    res.status(400).json({ error: error.message });
+  }
+};
+
+// @desc    Send email to lead
+// @route   POST /api/admin/leads/:id/email
+// @access  Private (Admin)
+export const sendLeadEmail = async (req, res) => {
+  try {
+    const { subject, message, html } = req.body;
+
+    const lead = await Lead.findById(req.params.id);
+    if (!lead) {
+      return res.status(404).json({ error: "Lead not found" });
+    }
+
+    // Import sendEmail function
+    const { sendEmail } = await import("../utils/emailService.js");
+
+    await sendEmail(lead.email, subject, message, html);
+
+    res.status(200).json({ message: "Email sent successfully to lead" });
+  } catch (error) {
+    console.error("Error sending email to lead:", error);
     res.status(500).json({ error: error.message });
   }
 };
@@ -254,6 +334,85 @@ export const getAllQuotations = async (req, res) => {
       .populate("createdBy", "fullName");
     res.status(200).json(quotations);
   } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+};
+
+// @desc    Get quotation by ID
+// @route   GET /api/admin/quotations/:id
+// @access  Private (Admin)
+export const getQuotationById = async (req, res) => {
+  try {
+    const quotation = await Quotation.findById(req.params.id)
+      .populate("customerId", "fullName email phone address")
+      .populate("productId", "name description price images")
+      .populate("createdBy", "fullName email");
+
+    if (!quotation) {
+      return res.status(404).json({ error: "Quotation not found" });
+    }
+
+    res.status(200).json(quotation);
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+};
+
+// @desc    Update quotation
+// @route   PUT /api/admin/quotations/:id
+// @access  Private (Admin)
+export const updateQuotation = async (req, res) => {
+  try {
+    const { details, status, price } = req.body;
+
+    const quotation = await Quotation.findByIdAndUpdate(
+      req.params.id,
+      {
+        details,
+        status,
+        price,
+      },
+      { new: true, runValidators: true }
+    )
+      .populate("customerId", "fullName email phone address")
+      .populate("productId", "name description price images")
+      .populate("createdBy", "fullName email");
+
+    if (!quotation) {
+      return res.status(404).json({ error: "Quotation not found" });
+    }
+
+    res.status(200).json(quotation);
+  } catch (error) {
+    res.status(400).json({ error: error.message });
+  }
+};
+
+// @desc    Send email about quotation
+// @route   POST /api/admin/quotations/:id/email
+// @access  Private (Admin)
+export const sendQuotationEmail = async (req, res) => {
+  try {
+    const { subject, message, html } = req.body;
+
+    const quotation = await Quotation.findById(req.params.id)
+      .populate("customerId", "fullName email")
+      .populate("productId", "name");
+
+    if (!quotation) {
+      return res.status(404).json({ error: "Quotation not found" });
+    }
+
+    // Import sendEmail function
+    const { sendEmail } = await import("../utils/emailService.js");
+
+    await sendEmail(quotation.customerId.email, subject, message, html);
+
+    res
+      .status(200)
+      .json({ message: "Email sent successfully about quotation" });
+  } catch (error) {
+    console.error("Error sending quotation email:", error);
     res.status(500).json({ error: error.message });
   }
 };
@@ -287,13 +446,23 @@ export const createProduct = async (req, res) => {
       images.push(result.secure_url);
     }
 
+    // Parse specifications if it's a string
+    let parsedSpecifications = specifications;
+    if (typeof specifications === "string") {
+      try {
+        parsedSpecifications = JSON.parse(specifications);
+      } catch (e) {
+        parsedSpecifications = {};
+      }
+    }
+
     const product = await Product.create({
       name,
       description,
       price,
       category,
       stock,
-      specifications,
+      specifications: parsedSpecifications,
       images,
     });
     res.status(201).json(product);
@@ -320,6 +489,16 @@ export const updateProduct = async (req, res) => {
       images.push(result.secure_url);
     }
 
+    // Parse specifications if it's a string
+    let parsedSpecifications = specifications;
+    if (typeof specifications === "string") {
+      try {
+        parsedSpecifications = JSON.parse(specifications);
+      } catch (e) {
+        parsedSpecifications = {};
+      }
+    }
+
     const product = await Product.findByIdAndUpdate(
       req.params.id,
       {
@@ -328,7 +507,7 @@ export const updateProduct = async (req, res) => {
         price,
         category,
         stock,
-        specifications,
+        specifications: parsedSpecifications,
         ...(images.length > 0 && { images }),
       },
       {

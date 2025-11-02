@@ -192,14 +192,21 @@ const ProductsTab: React.FC = () => {
             onClick={() => {
               const input = document.createElement("input");
               input.type = "file";
-              input.accept = ".csv";
-              input.onchange = (e) => {
+              input.accept = ".xlsx,.xls";
+              input.onchange = async (e) => {
                 const file = (e.target as HTMLInputElement).files?.[0];
                 if (file) {
-                  // Handle CSV import
-                  toast.success(
-                    "CSV import functionality would be implemented here"
-                  );
+                  const formData = new FormData();
+                  formData.append("file", file);
+
+                  try {
+                    await adminAPI.bulkImportProducts(formData);
+                    queryClient.invalidateQueries("admin-products");
+                    toast.success("Products imported successfully");
+                  } catch (error) {
+                    console.error("Import error:", error);
+                    toast.error("Failed to import products");
+                  }
                 }
               };
               input.click();
@@ -207,7 +214,7 @@ const ProductsTab: React.FC = () => {
             className="btn btn-outline"
           >
             <Upload className="w-4 h-4 mr-2" />
-            Import
+            Import Excel
           </button>
           <button onClick={() => setShowForm(true)} className="btn btn-primary">
             <Plus className="w-4 h-4 mr-2" />

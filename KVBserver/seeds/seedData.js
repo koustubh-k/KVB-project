@@ -328,7 +328,12 @@ const seedData = async () => {
         status: "new",
         source: "website",
         assignedTo: sales[0]._id,
-        notes: "Interested in solar cooking system for hostel kitchen",
+        notes: [
+          {
+            message: "Interested in solar cooking system for hostel kitchen",
+            addedBy: sales[0]._id,
+          },
+        ],
       },
       {
         name: "Prof. Meera Iyer",
@@ -338,7 +343,12 @@ const seedData = async () => {
         status: "contacted",
         source: "conference",
         assignedTo: sales[1]._id,
-        notes: "Follow-up scheduled for next week",
+        notes: [
+          {
+            message: "Follow-up scheduled for next week",
+            addedBy: sales[1]._id,
+          },
+        ],
       },
       {
         name: "Mr. Ramesh Jain",
@@ -348,7 +358,12 @@ const seedData = async () => {
         status: "follow-up pending",
         source: "referral",
         assignedTo: sales[2]._id,
-        notes: "Government tender for solar dryers",
+        notes: [
+          {
+            message: "Government tender for solar dryers",
+            addedBy: sales[2]._id,
+          },
+        ],
       },
       {
         name: "Dr. Anita Desai",
@@ -358,7 +373,12 @@ const seedData = async () => {
         status: "closed",
         source: "social media",
         assignedTo: sales[3]._id,
-        notes: "Project completed successfully",
+        notes: [
+          {
+            message: "Project completed successfully",
+            addedBy: sales[3]._id,
+          },
+        ],
       },
       {
         name: "Mr. Karan Singh",
@@ -368,7 +388,12 @@ const seedData = async () => {
         status: "new",
         source: "direct inquiry",
         assignedTo: sales[4]._id,
-        notes: "Hotel chain interested in bulk solar cooking systems",
+        notes: [
+          {
+            message: "Hotel chain interested in bulk solar cooking systems",
+            addedBy: sales[4]._id,
+          },
+        ],
       },
       {
         name: "Dr. Rajesh Verma",
@@ -378,7 +403,13 @@ const seedData = async () => {
         status: "closed",
         source: "email campaign",
         assignedTo: sales[5]._id,
-        notes: "College interested in solar tunnel dryer for food processing",
+        notes: [
+          {
+            message:
+              "College interested in solar tunnel dryer for food processing",
+            addedBy: sales[5]._id,
+          },
+        ],
       },
       {
         name: "Ms. Sunita Rao",
@@ -388,8 +419,13 @@ const seedData = async () => {
         status: "new",
         source: "trade show",
         assignedTo: sales[6]._id,
-        notes:
-          "Restaurant chain looking for energy-efficient cooking solutions",
+        notes: [
+          {
+            message:
+              "Restaurant chain looking for energy-efficient cooking solutions",
+            addedBy: sales[6]._id,
+          },
+        ],
       },
       {
         name: "Mr. Vijay Kumar",
@@ -399,7 +435,13 @@ const seedData = async () => {
         status: "contacted",
         source: "cold call",
         assignedTo: sales[7]._id,
-        notes: "Farmers cooperative interested in solar drying technology",
+        notes: [
+          {
+            message:
+              "Farmers cooperative interested in solar drying technology",
+            addedBy: sales[7]._id,
+          },
+        ],
       },
       {
         name: "Dr. Priya Menon",
@@ -409,7 +451,13 @@ const seedData = async () => {
         status: "follow-up pending",
         source: "partnership",
         assignedTo: sales[3]._id,
-        notes: "Research institute needs solar steam system for experiments",
+        notes: [
+          {
+            message:
+              "Research institute needs solar steam system for experiments",
+            addedBy: sales[3]._id,
+          },
+        ],
       },
       {
         name: "Mr. Arjun Patel",
@@ -419,7 +467,12 @@ const seedData = async () => {
         status: "closed",
         source: "website",
         assignedTo: sales[0]._id,
-        notes: "Hotel group wants to implement green cooking initiatives",
+        notes: [
+          {
+            message: "Hotel group wants to implement green cooking initiatives",
+            addedBy: sales[0]._id,
+          },
+        ],
       },
       {
         name: "Dr. Kavita Singh",
@@ -429,7 +482,13 @@ const seedData = async () => {
         status: "new",
         source: "conference",
         assignedTo: sales[5]._id,
-        notes: "University cafeteria interested in solar cooking demonstration",
+        notes: [
+          {
+            message:
+              "University cafeteria interested in solar cooking demonstration",
+            addedBy: sales[5]._id,
+          },
+        ],
       },
       {
         name: "Mr. Ramesh Babu",
@@ -439,7 +498,13 @@ const seedData = async () => {
         status: "contacted",
         source: "government tender",
         assignedTo: sales[6]._id,
-        notes: "Government project for solar cooking in public institutions",
+        notes: [
+          {
+            message:
+              "Government project for solar cooking in public institutions",
+            addedBy: sales[6]._id,
+          },
+        ],
       },
       {
         name: "Ms. Anjali Gupta",
@@ -449,7 +514,12 @@ const seedData = async () => {
         status: "follow-up pending",
         source: "social media",
         assignedTo: sales[7]._id,
-        notes: "NGO working on rural solar adoption programs",
+        notes: [
+          {
+            message: "NGO working on rural solar adoption programs",
+            addedBy: sales[7]._id,
+          },
+        ],
       },
       {
         name: "Dr. Manoj Tiwari",
@@ -459,7 +529,12 @@ const seedData = async () => {
         status: "closed",
         source: "referral",
         assignedTo: sales[3]._id,
-        notes: "IIT Bombay research team needs solar concentrator system",
+        notes: [
+          {
+            message: "IIT Bombay research team needs solar concentrator system",
+            addedBy: sales[3]._id,
+          },
+        ],
       },
       {
         name: "Mr. Sanjay Sharma",
@@ -469,7 +544,13 @@ const seedData = async () => {
         status: "new",
         source: "direct inquiry",
         assignedTo: sales[1]._id,
-        notes: "Luxury resort interested in solar-powered kitchen equipment",
+        notes: [
+          {
+            message:
+              "Luxury resort interested in solar-powered kitchen equipment",
+            addedBy: sales[1]._id,
+          },
+        ],
       },
       {
         name: "Dr. Neha Agarwal",
@@ -479,7 +560,12 @@ const seedData = async () => {
         status: "contacted",
         source: "partnership",
         assignedTo: sales[5]._id,
-        notes: "Medical college wants solar steam sterilization system",
+        notes: [
+          {
+            message: "Medical college wants solar steam sterilization system",
+            addedBy: sales[5]._id,
+          },
+        ],
       },
     ]);
 

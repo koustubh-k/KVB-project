@@ -89,6 +89,24 @@ export const adminAPI = {
     api.put(`/admin/workers/${id}`, data),
   deleteWorker: (id: string) => api.delete(`/admin/workers/${id}`),
 
+  // Sales
+  getAllSales: () => api.get("/admin/sales"),
+
+  // Leads
+  getAllLeads: () => api.get("/admin/leads"),
+  getLeadById: (id: string) => api.get(`/admin/leads/${id}`),
+  updateLead: (id: string, data: any) => api.put(`/admin/leads/${id}`, data),
+  sendLeadEmail: (id: string, data: any) =>
+    api.post(`/admin/leads/${id}/email`, data),
+
+  // Quotations
+  getAllQuotations: () => api.get("/admin/quotations"),
+  getQuotationById: (id: string) => api.get(`/admin/quotations/${id}`),
+  updateQuotation: (id: string, data: any) =>
+    api.put(`/admin/quotations/${id}`, data),
+  sendQuotationEmail: (id: string, data: any) =>
+    api.post(`/admin/quotations/${id}/email`, data),
+
   // Products
   getAllProducts: () => api.get("/admin/products"),
   createProduct: (data: FormData) => api.post("/admin/products", data),
@@ -101,6 +119,15 @@ export const adminAPI = {
   createTask: (data: any) => api.post("/admin/tasks", data),
   updateTask: (id: string, data: any) => api.put(`/admin/tasks/${id}`, data),
   deleteTask: (id: string) => api.delete(`/admin/tasks/${id}`),
+
+  // Bulk operations
+  bulkImportProducts: (data: FormData) =>
+    api.post("/admin/bulk-import/products", data),
+  bulkImportTasks: (data: FormData) =>
+    api.post("/admin/bulk-import/tasks", data),
+  bulkImportCustomers: (data: FormData) =>
+    api.post("/admin/bulk-import/customers", data),
+  exportData: (type: string) => api.get(`/admin/export/${type}`),
 };
 
 // Worker/Tasks API
@@ -116,8 +143,12 @@ export const tasksAPI = {
 export const salesAPI = {
   // Leads
   getLeads: () => api.get("/sales/leads"),
+  getLeadById: (id: string) => api.get(`/sales/leads/${id}`),
   createLead: (data: any) => api.post("/sales/leads", data),
   updateLead: (id: string, data: any) => api.put(`/sales/leads/${id}`, data),
+  deleteLead: (id: string) => api.delete(`/sales/leads/${id}`),
+  sendLeadEmail: (id: string, data: any) =>
+    api.post(`/sales/leads/${id}/email`, data),
   addLeadNote: (leadId: string, data: any) =>
     api.post(`/sales/leads/${leadId}/notes`, data),
 
@@ -126,22 +157,24 @@ export const salesAPI = {
 
   // Quotations
   getQuotations: () => api.get("/sales/quotations"),
+  getQuotationById: (id: string) => api.get(`/sales/quotations/${id}`),
   createQuotation: (data: {
     productId: string;
-    customerId: string;
+    details: string;
     price: number;
-    terms: string;
-    validUntil: string;
   }) => api.post("/sales/quotations", data),
   updateQuotation: (
     id: string,
     data: {
-      status: string;
+      productId?: string;
+      details?: string;
+      status?: string;
       price?: number;
-      terms?: string;
-      validUntil?: string;
     }
   ) => api.put(`/sales/quotations/${id}`, data),
+  deleteQuotation: (id: string) => api.delete(`/sales/quotations/${id}`),
+  sendQuotationEmail: (id: string, data: any) =>
+    api.post(`/sales/quotations/${id}/email`, data),
 
   // Products
   getProducts: () => api.get("/products"),

@@ -3,13 +3,10 @@ import {
   getWorkerTasks,
   markTaskComplete,
   updateTaskStatus,
-  uploadTasksExcel,
   uploadTaskFiles,
   addTaskComment,
 } from "../controllers/task.controller.js";
 import { protectWorker } from "../middleware/authMiddleware.js";
-import { protectRoute } from "../middleware/protectRoute.js";
-import { authorizeRole } from "../middleware/roleMiddleware.js";
 import {
   validateTaskId,
   validateTaskStatusUpdate,
@@ -46,13 +43,6 @@ router.post(
 // Add comments to tasks
 router.post("/:taskId/comments", protectWorker, validateTaskId, addTaskComment);
 
-// Admin bulk upload
-router.post(
-  "/upload-excel",
-  protectRoute,
-  authorizeRole("admin"),
-  upload.single("file"),
-  uploadTasksExcel
-);
+// Note: Bulk upload moved to admin routes (/api/admin/bulk-import/tasks)
 
 export default router;

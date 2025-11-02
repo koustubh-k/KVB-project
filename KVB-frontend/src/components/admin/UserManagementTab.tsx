@@ -50,17 +50,14 @@ const UserManagementTab: React.FC = () => {
   const queryClient = useQueryClient();
 
   // Fetch all users
-  const { data: admins } = useQuery<Admin[]>(
-    "admin-admins",
-    () => adminAPI.getAllWorkers().then((res) => res.data) // Note: Need separate endpoints
-  );
   const { data: workers } = useQuery<Worker[]>("admin-workers", () =>
     adminAPI.getAllWorkers().then((res) => res.data)
   );
-  const { data: sales } = useQuery<Sales[]>(
-    "admin-sales",
-    () => adminAPI.getAllWorkers().then((res) => res.data) // Note: Need separate endpoints
+  const { data: sales } = useQuery<Sales[]>("admin-sales", () =>
+    adminAPI.getAllSales().then((res) => res.data)
   );
+  // Note: No separate admin endpoint exists in backend
+  const admins: Admin[] = [];
 
   const allUsers = [
     ...(admins || []).map((user) => ({ ...user, userType: "admin" as const })),

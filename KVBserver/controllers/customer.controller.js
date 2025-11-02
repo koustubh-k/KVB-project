@@ -23,6 +23,7 @@ export const submitEnquiry = async (req, res) => {
           filename: file.originalname,
           url: result.secure_url,
           publicId: result.public_id,
+          uploadedAt: new Date(),
         });
       }
     }
@@ -114,7 +115,7 @@ export const getCustomerProjects = async (req, res) => {
       _id: quotation._id,
       title: `Quotation for ${quotation.productId?.name || "Product"}`,
       description:
-        quotation.notes ||
+        quotation.details ||
         `Quotation request for ${quotation.productId?.name || "product"}`,
       status: quotation.status,
       type: "quotation",

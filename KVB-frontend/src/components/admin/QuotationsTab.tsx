@@ -3,7 +3,7 @@ import { useQuery, useMutation, useQueryClient } from "react-query";
 import { Plus, Search, Edit, Trash2, Eye } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
 import { Quotation } from "@/types";
-import { salesAPI } from "@/lib/api";
+import { adminAPI } from "@/lib/api";
 import toast from "react-hot-toast";
 
 const QuotationsTab: React.FC = () => {
@@ -17,13 +17,13 @@ const QuotationsTab: React.FC = () => {
     isLoading,
     error,
   } = useQuery<Quotation[]>("admin-quotations", () =>
-    salesAPI.getQuotations().then((res) => res.data)
+    adminAPI.getAllQuotations().then((res) => res.data)
   );
 
-  // Delete quotation mutation
+  // Delete quotation mutation (cancel by updating status)
   const deleteQuotationMutation = useMutation(
     (quotationId: string) =>
-      salesAPI.updateQuotation(quotationId, { status: "cancelled" }),
+      adminAPI.updateQuotation(quotationId, { status: "cancelled" }),
     {
       onSuccess: () => {
         queryClient.invalidateQueries("admin-quotations");
@@ -37,10 +37,10 @@ const QuotationsTab: React.FC = () => {
 
   const filteredQuotations = (quotations || []).filter(
     (quotation) =>
-      quotation.customerId.fullName
+      (quotation.customerId?.fullName || "")
         .toLowerCase()
         .includes(searchTerm.toLowerCase()) ||
-      quotation.productId.name
+      (quotation.productId?.name || "")
         .toLowerCase()
         .includes(searchTerm.toLowerCase()) ||
       (quotation.region || "").toLowerCase().includes(searchTerm.toLowerCase())
@@ -49,17 +49,17 @@ const QuotationsTab: React.FC = () => {
   const getQuotationStatusColor = (status: string) => {
     switch (status) {
       case "new":
-        return "bg-blue-100 text-blue-800";
+        return "bg-blue-500 text-white";
       case "contacted":
-        return "bg-yellow-100 text-yellow-800";
+        return "bg-yellow-500 text-black";
       case "quotation sent":
-        return "bg-purple-100 text-purple-800";
+        return "bg-purple-500 text-white";
       case "closed":
-        return "bg-red-100 text-red-800";
+        return "bg-red-500 text-white";
       case "converted":
-        return "bg-green-100 text-green-800";
+        return "bg-green-500 text-white";
       default:
-        return "bg-gray-100 text-gray-800";
+        return "bg-gray-500 text-white";
     }
   };
 
@@ -141,9 +141,6 @@ const QuotationsTab: React.FC = () => {
                   Price
                 </th>
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-300 uppercase tracking-wider">
-                  Region
-                </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-300 uppercase tracking-wider">
                   Status
                 </th>
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-300 uppercase tracking-wider">
@@ -159,15 +156,15 @@ const QuotationsTab: React.FC = () => {
                 <tr key={quotation._id} className="hover:bg-gray-700">
                   <td className="px-6 py-4 whitespace-nowrap">
                     <div className="text-sm font-medium text-white">
-                      {quotation.customerId.fullName}
+                      {quotation.customerId?.fullName || "No Customer"}
                     </div>
                     <div className="text-sm text-gray-300">
-                      {quotation.customerId.email}
+                      {quotation.customerId?.email || "N/A"}
                     </div>
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap">
                     <div className="text-sm text-white">
-                      {quotation.productId.name}
+                      {quotation.productId?.name || "No Product"}
                     </div>
                     <div className="text-sm text-gray-300 max-w-xs truncate">
                       {quotation.details}
@@ -179,16 +176,13 @@ const QuotationsTab: React.FC = () => {
                     </div>
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap">
-                    <div className="text-sm text-white">
-                      {quotation.region || "N/A"}
-                    </div>
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap">
                     {getStatusBadge(quotation.status)}
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap">
                     <div className="text-sm text-white">
-                      {quotation.createdBy}
+                      {quotation.createdByModel === "Sales"
+                        ? "Sales Team"
+                        : "Admin"}
                     </div>
                     <div className="text-sm text-gray-300">
                       {new Date(quotation.createdAt).toLocaleDateString()}
@@ -197,24 +191,24 @@ const QuotationsTab: React.FC = () => {
                   <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
                     <div className="flex items-center space-x-2">
                       <button
-                        className="text-blue-600 hover:text-blue-900"
+                        className="text-blue-400 hover:text-blue-300 p-1"
                         title="View Details"
                       >
                         <Eye className="w-4 h-4" />
                       </button>
                       <button
-                        className="text-primary-600 hover:text-primary-900"
+                        className="text-yellow-400 hover:text-yellow-300 p-1"
                         title="Edit"
                       >
                         <Edit className="w-4 h-4" />
                       </button>
                       <button
-                        className="text-red-600 hover:text-red-900"
+                        className="text-red-400 hover:text-red-300 p-1"
                         title="Cancel Quotation"
                         onClick={() =>
                           handleDeleteQuotation(
                             quotation._id,
-                            quotation.customerId.fullName
+                            quotation.customerId?.fullName || "Customer"
                           )
                         }
                         disabled={deleteQuotationMutation.isLoading}

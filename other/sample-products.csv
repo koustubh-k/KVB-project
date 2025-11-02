@@ -1,0 +1,11 @@
+name,description,image,price,category
+"Solar Steam Cooking System","Scheeffler dish-based solar steam cooking system for institutional kitchens. Includes parabolic dish, stand, and steam generation unit.","/images/dish 1.jpg",150000,"Solar Cooking"
+"Solar Tunnel Dryer","Walk-in solar tunnel dryer for agricultural produce. Features automated temperature and humidity control with IoT monitoring.","/images/dish 2.jpg",250000,"Solar Drying"
+"Parabolic Dish Assembly","Individual parabolic dish for solar concentrator systems. Manufactured with precision welding and coating.","/images/dish 3.webp",75000,"Solar Components"
+"Solar Dryer Control Unit","Automated control system for solar dryers with sensor integration, data logging, and remote monitoring dashboard.","/images/dish 4.png",50000,"Control Systems"
+"Header Tank Assembly","Seamless pipe header tank for steam distribution in solar cooking systems. Includes flanges and insulation.","/images/dish 5.jpg",30000,"Steam Distribution"
+"Solar Panel Mounting Kit","Heavy-duty mounting kit for solar panels with adjustable angles and wind resistance up to 150 km/h.","/images/solar-panel-mount.jpg",25000,"Mounting Systems"
+"Solar Water Heater","Compact solar water heating system for residential use with 200L capacity and temperature up to 80°C.","/images/water-heater.jpg",45000,"Water Heating"
+"Solar PV System 5KW","Complete 5KW solar photovoltaic system with microinverters, monitoring, and 25-year warranty.","/images/pv-system.jpg",300000,"Solar Power"
+"Solar Street Light","LED solar street light with motion sensor, 50W power, and 12 hours autonomy.","/images/street-light.jpg",15000,"Lighting"
+"Solar Pump System","Solar-powered water pumping system for irrigation with 3HP motor and 100m head capacity.","/images/solar-pump.jpg",120000,"Water Pumping"

@@ -1,0 +1,6 @@
+title,description,priority,status,location,dueDate,assignedTo,customer,product
+"Solar Panel Installation","Install 5KW solar panel system at customer site","high","pending","Mumbai, Maharashtra","2025-12-01","WORKER_ID_HERE","CUSTOMER_ID_HERE","PRODUCT_ID_HERE"
+"Dish Maintenance","Perform maintenance on solar steam cooking system","medium","pending","Delhi, NCR","2025-11-15","WORKER_ID_HERE","CUSTOMER_ID_HERE","PRODUCT_ID_HERE"
+"System Testing","Test solar dryer control unit functionality","high","in-progress","Bangalore, Karnataka","2025-11-10","WORKER_ID_HERE","CUSTOMER_ID_HERE","PRODUCT_ID_HERE"
+"Customer Training","Train customer on solar water heater operation","low","pending","Chennai, Tamil Nadu","2025-11-20","WORKER_ID_HERE","CUSTOMER_ID_HERE","PRODUCT_ID_HERE"
+"Site Inspection","Inspect installation site for solar tunnel dryer","medium","pending","Pune, Maharashtra","2025-11-25","WORKER_ID_HERE","CUSTOMER_ID_HERE","PRODUCT_ID_HERE"

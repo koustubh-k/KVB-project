@@ -1,0 +1,50 @@
+KVBserver/ - Root directory of the server project.
+
+.gitignore - Specifies files and directories to be ignored by Git.
+
+index.js - Main entry point of the server application. Sets up Express app, middleware, routes, and starts the server.
+
+package.json - Contains project metadata, scripts, and dependencies.
+
+package-lock.json - Automatically generated file that locks the versions of dependencies.
+
+controllers/ - Contains controller files that handle the business logic for different routes.
+  - admin.auth.controller.js: Handles admin authentication (signup, login, logout, password reset).
+  - admin.controller.js: Handles admin-specific operations.
+  - auth.controller.js: Handles general authentication logic.
+  - customer.auth.controller.js: Handles customer authentication.
+  - product.controller.js: Handles product-related operations.
+  - task.controller.js: Handles task-related operations.
+  - worker.auth.controller.js: Handles worker authentication.
+
+lib/ - Contains utility libraries.
+  - cloudinary.js: Cloudinary configuration and helper functions for image upload.
+  - db.js: MongoDB connection setup.
+  - generateToken.js: Utility to generate JWT tokens and set cookies.
+
+middleware/ - Contains Express middleware for request processing and validation.
+  - authMiddleware.js: Middleware for general authentication.
+  - customerAuthMiddleware.js: Middleware for customer-specific authentication.
+  - protectRoute.js: Middleware to protect routes.
+  - validation.js: Middleware for request validation.
+
+models/ - Contains Mongoose models representing database schemas.
+  - admin.model.js: Admin user schema.
+  - customer.model.js: Customer schema.
+  - index.js: Aggregates and exports all models.
+  - product.model.js: Product schema.
+  - task.model.js: Task schema.
+  - user.model.js: User schema.
+  - worker.model.js: Worker schema.
+
+routes/ - Contains route definitions mapping endpoints to controllers.
+  - admin.auth.route.js: Routes for admin authentication.
+  - admin.route.js: Routes for admin operations.
+  - auth.route.js: Routes for general authentication.
+  - customer.auth.route.js: Routes for customer authentication.
+  - product.route.js: Routes for product operations.
+  - task.route.js: Routes for task operations.
+  - worker.auth.route.js: Routes for worker authentication.
+
+seeds/ - Contains seed data scripts for populating the database.
+  - seedData.js: Script to seed initial data into the database.

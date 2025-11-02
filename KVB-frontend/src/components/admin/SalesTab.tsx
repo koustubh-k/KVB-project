@@ -1,0 +1,424 @@
+import React, { useState, useEffect } from "react";
+import { useQuery, useMutation, useQueryClient } from "react-query";
+import { Plus, Search, Edit, Trash2, Mail, Eye } from "lucide-react";
+import { useAuth } from "@/contexts/AuthContext";
+import { Lead, Quotation } from "@/types";
+import { salesAPI } from "@/lib/api";
+import toast from "react-hot-toast";
+
+const SalesTab: React.FC = () => {
+  const { user } = useAuth();
+  const queryClient = useQueryClient();
+  const [activeSubTab, setActiveSubTab] = useState<"leads" | "quotations">(
+    "leads"
+  );
+  const [searchTerm, setSearchTerm] = useState("");
+
+  // Fetch leads
+  const {
+    data: leads,
+    isLoading: leadsLoading,
+    error: leadsError,
+  } = useQuery<Lead[]>("admin-leads", () =>
+    salesAPI.getLeads().then((res) => res.data)
+  );
+
+  // Fetch quotations
+  const {
+    data: quotations,
+    isLoading: quotationsLoading,
+    error: quotationsError,
+  } = useQuery<Quotation[]>("admin-quotations", () =>
+    salesAPI.getQuotations().then((res) => res.data)
+  );
+
+  // Delete lead mutation
+  const deleteLeadMutation = useMutation(
+    (leadId: string) => salesAPI.updateLead(leadId, { status: "deleted" }),
+    {
+      onSuccess: () => {
+        queryClient.invalidateQueries("admin-leads");
+        toast.success("Lead deleted successfully");
+      },
+      onError: () => {
+        toast.error("Failed to delete lead");
+      },
+    }
+  );
+
+  // Delete quotation mutation
+  const deleteQuotationMutation = useMutation(
+    (quotationId: string) =>
+      salesAPI.updateQuotation(quotationId, { status: "cancelled" }),
+    {
+      onSuccess: () => {
+        queryClient.invalidateQueries("admin-quotations");
+        toast.success("Quotation cancelled successfully");
+      },
+      onError: () => {
+        toast.error("Failed to cancel quotation");
+      },
+    }
+  );
+
+  // Generic send email mutation
+  const sendEmailMutation = useMutation(
+    (data: { to: string; subject: string; text: string; html?: string }) =>
+      salesAPI.sendFollowUpEmail(data),
+    {
+      onSuccess: () => {
+        toast.success("Email sent successfully");
+      },
+      onError: (error) => {
+        console.error("Failed to send email:", error);
+        toast.error("Failed to send email");
+      },
+    }
+  );
+
+  const filteredLeads = (leads || []).filter(
+    (lead) =>
+      lead.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      lead.email.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      lead.region.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      (lead.message || "").toLowerCase().includes(searchTerm.toLowerCase()) // Include message in search
+  );
+
+  const filteredQuotations = (quotations || []).filter(
+    (quotation) =>
+      quotation.customerId.fullName
+        .toLowerCase()
+        .includes(searchTerm.toLowerCase()) ||
+      quotation.productId.name.toLowerCase().includes(searchTerm.toLowerCase())
+  );
+
+  const getStatusColor = (status: string) => {
+    switch (status) {
+      case "new":
+        return "bg-blue-100 text-blue-800";
+      case "contacted":
+        return "bg-yellow-100 text-yellow-800";
+      case "follow-up pending":
+        return "bg-orange-100 text-orange-800";
+      case "converted":
+        return "bg-green-100 text-green-800";
+      default:
+        return "bg-gray-100 text-gray-800";
+    }
+  };
+
+  const getQuotationStatusColor = (status: string) => {
+    switch (status) {
+      case "new":
+        return "bg-blue-100 text-blue-800";
+      case "contacted":
+        return "bg-yellow-100 text-yellow-800";
+      case "quotation sent":
+        return "bg-purple-100 text-purple-800";
+      case "closed":
+        return "bg-red-100 text-red-800";
+      case "converted":
+        return "bg-green-100 text-green-800";
+      default:
+        return "bg-gray-100 text-gray-800";
+    }
+  };
+
+  const formatPrice = (price: number) => {
+    return new Intl.NumberFormat("en-IN", {
+      style: "currency",
+      currency: "INR",
+    }).format(price);
+  };
+
+  const handleDeleteLead = (leadId: string, leadName: string) => {
+    if (window.confirm(`Are you sure you want to delete lead "${leadName}"?`)) {
+      deleteLeadMutation.mutate(leadId);
+    }
+  };
+
+  const handleDeleteQuotation = (quotationId: string, customerName: string) => {
+    if (
+      window.confirm(
+        `Are you sure you want to cancel quotation for "${customerName}"?`
+      )
+    ) {
+      deleteQuotationMutation.mutate(quotationId);
+    }
+  };
+
+  const handleSendLeadEmail = (lead: Lead) => {
+    const subject = `Follow-up regarding your enquiry - KVB Green Energies`;
+    const text = `Dear ${lead.name},\n\nThank you for your interest in our products. We'd like to follow up on your recent enquiry.\n\nPlease let us know if you have any questions or need further information.\n\nBest regards,\nKVB Sales Team`;
+
+    sendEmailMutation.mutate({ to: lead.email, subject, text });
+  };
+
+  const handleSendQuotationEmail = (quotation: Quotation) => {
+    const subject = `Quotation for ${quotation.productId.name} (ID: ${quotation._id}) - KVB Green Energies`;
+    const text = `Dear ${quotation.customerId.fullName},\n\nPlease find attached your quotation for ${quotation.productId.name}.\n\nDetails:\nProduct: ${quotation.productId.name}\nPrice: ${formatPrice(quotation.price)}\nStatus: ${quotation.status}\n\nWe look forward to hearing from you.\n\nBest regards,\nKVB Sales Team`;
+
+    sendEmailMutation.mutate({ to: quotation.customerId.email, subject, text });
+  };
+
+  return (
+    <div className="space-y-6">
+      {/* Header */}
+      <div className="flex items-center justify-between">
+        <div>
+          <h2 className="text-2xl font-bold text-white">Sales Management</h2>
+          <p className="text-gray-300 mt-1">
+            Manage leads and quotations across all regions
+          </p>
+        </div>
+        <div className="flex space-x-3">
+          <button className="btn btn-primary">
+            <Plus className="w-4 h-4 mr-2" />
+            Add Lead
+          </button>
+        </div>
+      </div>
+
+      {/* Sub-tabs */}
+      <div className="bg-gray-800 rounded-lg shadow-sm border border-gray-700">
+        <nav className="flex space-x-8 px-6" aria-label="Sub-tabs">
+          {[
+            { id: "leads", label: "Leads", count: (leads || []).length },
+            {
+              id: "quotations",
+              label: "Quotations",
+              count: (quotations || []).length,
+            },
+          ].map((tab) => (
+            <button
+              key={tab.id}
+              onClick={() => setActiveSubTab(tab.id as "leads" | "quotations")}
+              className={`whitespace-nowrap py-4 px-1 border-b-2 font-medium text-sm flex items-center space-x-2 transition-colors ${
+                activeSubTab === tab.id
+                  ? "border-primary-500 text-primary-600"
+                  : "border-transparent text-gray-400 hover:text-gray-200 hover:border-gray-600"
+              }`}
+            >
+              <span>{tab.label}</span>
+              <span className="bg-gray-700 text-gray-300 px-2 py-1 rounded-full text-xs">
+                {tab.count}
+              </span>
+            </button>
+          ))}
+        </nav>
+      </div>
+
+      {/* Search */}
+      <div className="flex items-center space-x-4">
+        <div className="flex-1 relative">
+          <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
+          <input
+            type="text"
+            placeholder={`Search ${activeSubTab}...`}
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
+            className="input pl-10"
+          />
+        </div>
+      </div>
+
+      {/* Content */}
+      {activeSubTab === "leads" ? (
+        <div className="bg-gray-800 rounded-lg shadow-sm border border-gray-700 overflow-hidden">
+          <div className="overflow-x-auto">
+            <table className="min-w-full divide-y divide-gray-700">
+              <thead className="bg-gray-700">
+                <tr>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-300 uppercase tracking-wider">
+                    Name
+                  </th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-300 uppercase tracking-wider">
+                    Contact
+                  </th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-300 uppercase tracking-wider">
+                    Region
+                  </th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-300 uppercase tracking-wider">
+                    Message
+                  </th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-300 uppercase tracking-wider">
+                    Status
+                  </th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-300 uppercase tracking-wider">
+                    Actions
+                  </th>
+                </tr>
+              </thead>
+              <tbody className="bg-gray-800 divide-y divide-gray-700">
+                {filteredLeads.map((lead) => (
+                  <tr key={lead._id} className="hover:bg-gray-700">
+                    <td className="px-6 py-4 whitespace-nowrap">
+                      <div className="text-sm font-medium text-white">
+                        {lead.name}
+                      </div>
+                      <div className="text-sm text-gray-300">{lead.source}</div>
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap">
+                      <div className="text-sm text-white">{lead.email}</div>
+                      <div className="text-sm text-gray-300">{lead.phone}</div>
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap">
+                      <div className="text-sm text-white">{lead.region}</div>
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap">
+                      <div className="text-sm text-white max-w-xs truncate">
+                        {lead.message || "N/A"}
+                      </div>
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap">
+                      <span
+                        className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${getStatusColor(
+                          lead.status
+                        )}`}
+                      >
+                        {lead.status}
+                      </span>
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
+                      <div className="flex items-center space-x-2">
+                        <button
+                          className="text-blue-400 hover:text-blue-300 p-1"
+                          title="View Lead"
+                        >
+                          <Eye className="w-4 h-4" />
+                        </button>
+                        <button
+                          className="text-yellow-400 hover:text-yellow-300 p-1"
+                          title="Edit Lead"
+                        >
+                          <Edit className="w-4 h-4" />
+                        </button>
+                        <button
+                          className="text-green-400 hover:text-green-300 p-1"
+                          title="Send Email"
+                          onClick={() => handleSendLeadEmail(lead)}
+                          disabled={sendEmailMutation.isLoading}
+                        >
+                          <Mail className="w-4 h-4" />
+                        </button>
+                        <button
+                          className="text-red-400 hover:text-red-300 p-1"
+                          title="Delete Lead"
+                          onClick={() => handleDeleteLead(lead._id, lead.name)}
+                          disabled={deleteLeadMutation.isLoading}
+                        >
+                          <Trash2 className="w-4 h-4" />
+                        </button>
+                      </div>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      ) : (
+        <div className="bg-gray-800 rounded-lg shadow-sm border border-gray-700 overflow-hidden">
+          <div className="overflow-x-auto">
+            <table className="min-w-full divide-y divide-gray-700">
+              <thead className="bg-gray-700">
+                <tr>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-300 uppercase tracking-wider">
+                    Customer
+                  </th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-300 uppercase tracking-wider">
+                    Product
+                  </th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-300 uppercase tracking-wider">
+                    Price
+                  </th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-300 uppercase tracking-wider">
+                    Status
+                  </th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-300 uppercase tracking-wider">
+                    Actions
+                  </th>
+                </tr>
+              </thead>
+              <tbody className="bg-gray-800 divide-y divide-gray-700">
+                {filteredQuotations.map((quotation) => (
+                  <tr key={quotation._id} className="hover:bg-gray-700">
+                    <td className="px-6 py-4 whitespace-nowrap">
+                      <div className="text-sm font-medium text-white">
+                        {quotation.customerId.fullName}
+                      </div>
+                      <div className="text-sm text-gray-300">
+                        {quotation.customerId.email}
+                      </div>
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap">
+                      <div className="text-sm text-white">
+                        {quotation.productId.name}
+                      </div>
+                      <div className="text-sm text-gray-300">
+                        {quotation.details}
+                      </div>
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap">
+                      <div className="text-sm text-white">
+                        {formatPrice(quotation.price)}
+                      </div>
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap">
+                      <span
+                        className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${getQuotationStatusColor(
+                          quotation.status
+                        )}`}
+                      >
+                        {quotation.status}
+                      </span>
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
+                      <div className="flex items-center space-x-2">
+                        <button
+                          className="text-blue-400 hover:text-blue-300 p-1"
+                          title="View Quotation"
+                        >
+                          <Eye className="w-4 h-4" />
+                        </button>
+                        <button
+                          className="text-yellow-400 hover:text-yellow-300 p-1"
+                          title="Edit Quotation"
+                        >
+                          <Edit className="w-4 h-4" />
+                        </button>
+                        <button
+                          className="text-green-400 hover:text-green-300 p-1"
+                          title="Send Email"
+                          onClick={() => handleSendQuotationEmail(quotation)}
+                          disabled={sendEmailMutation.isLoading}
+                        >
+                          <Mail className="w-4 h-4" />
+                        </button>
+                        <button
+                          className="text-red-400 hover:text-red-300 p-1"
+                          title="Cancel Quotation"
+                          onClick={() =>
+                            handleDeleteQuotation(
+                              quotation._id,
+                              quotation.customerId.fullName
+                            )
+                          }
+                          disabled={deleteQuotationMutation.isLoading}
+                        >
+                          <Trash2 className="w-4 h-4" />
+                        </button>
+                      </div>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+};
+
+export default SalesTab;

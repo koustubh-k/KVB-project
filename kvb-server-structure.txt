@@ -1,0 +1,40 @@
+KVBserver/
+├── .gitignore
+├── index.js
+├── package-lock.json
+├── package.json
+├── controllers/
+│   ├── admin.auth.controller.js
+│   ├── admin.controller.js
+│   ├── auth.controller.js
+│   ├── customer.auth.controller.js
+│   ├── product.controller.js
+│   ├── task.controller.js
+│   └── worker.auth.controller.js
+├── lib/
+│   ├── cloudinary.js
+│   ├── db.js
+│   └── generateToken.js
+├── middleware/
+│   ├── authMiddleware.js
+│   ├── customerAuthMiddleware.js
+│   ├── protectRoute.js
+│   └── validation.js
+├── models/
+│   ├── admin.model.js
+│   ├── customer.model.js
+│   ├── index.js
+│   ├── product.model.js
+│   ├── task.model.js
+│   ├── user.model.js
+│   └── worker.model.js
+├── routes/
+│   ├── admin.auth.route.js
+│   ├── admin.route.js
+│   ├── auth.route.js
+│   ├── customer.auth.route.js
+│   ├── product.route.js
+│   ├── task.route.js
+│   └── worker.auth.route.js
+└── seeds/
+    └── seedData.js

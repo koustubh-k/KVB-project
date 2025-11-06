@@ -12,7 +12,6 @@ export const api = axios.create({
   },
 });
 
-// Request interceptor for auth
 api.interceptors.request.use(
   (config) => {
     return config;
@@ -22,7 +21,6 @@ api.interceptors.request.use(
   }
 );
 
-// Response interceptor for handling errors
 api.interceptors.response.use(
   (response) => response,
   (error) => {
@@ -41,7 +39,6 @@ export const authAPI = {
   customerLogin: (data: any) => api.post("/customer-auth/login", data),
   customerLogout: () => api.post("/customer-auth/logout"),
 
-  // Worker auth
   workerSignup: (data: any) => api.post("/worker-auth/signup", data),
   workerLogin: (data: any) => api.post("/worker-auth/login", data),
   workerLogout: () => api.post("/worker-auth/logout"),
@@ -99,6 +96,7 @@ export const adminAPI = {
   updateLead: (id: string, data: any) => api.put(`/admin/leads/${id}`, data),
   sendLeadEmail: (id: string, data: any) =>
     api.post(`/admin/leads/${id}/email`, data),
+  createLead: (data: any) => api.post("/sales/leads", data),
 
   // Quotations
   getAllQuotations: () => api.get("/admin/quotations"),

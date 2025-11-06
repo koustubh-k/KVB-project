@@ -1,15 +1,23 @@
-import React, { useState, useEffect } from "react";
+import React, { useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "react-query";
 import { Plus, Search, Edit, Trash2, Eye } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
 import { Quotation } from "@/types";
-import { adminAPI } from "@/lib/api";
+import { adminAPI, salesAPI } from "@/lib/api";
 import toast from "react-hot-toast";
 
 const QuotationsTab: React.FC = () => {
   const { user } = useAuth();
   const queryClient = useQueryClient();
   const [searchTerm, setSearchTerm] = useState("");
+
+  // Create Quotation modal state + form
+  const [showCreateModal, setShowCreateModal] = useState(false);
+  const [newQuotation, setNewQuotation] = useState({
+    productId: "",
+    details: "",
+    price: "",
+  });
 
   // Fetch quotations
   const {
@@ -18,6 +26,29 @@ const QuotationsTab: React.FC = () => {
     error,
   } = useQuery<Quotation[]>("admin-quotations", () =>
     adminAPI.getAllQuotations().then((res) => res.data)
+  );
+
+  // Create quotation mutation (using salesAPI.createQuotation)
+  const createQuotationMutation = useMutation(
+    (payload: { productId: string; details: string; price: number }) =>
+      salesAPI.createQuotation(payload),
+    {
+      onSuccess: () => {
+        queryClient.invalidateQueries("admin-quotations");
+        toast.success("Quotation created successfully");
+        setShowCreateModal(false);
+        setNewQuotation({ productId: "", details: "", price: "" });
+      },
+      onError: (err: any) => {
+        const msg =
+          err?.response?.data?.message ||
+          err?.response?.data?.error ||
+          err?.message ||
+          "Failed to create quotation";
+        console.error("Failed to create quotation:", err);
+        toast.error(msg);
+      },
+    }
   );
 
   // Delete quotation mutation (cancel by updating status)
@@ -91,20 +122,49 @@ const QuotationsTab: React.FC = () => {
     }
   };
 
+  // Create quotation submit
+  const handleCreateQuotationSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    const { productId, details, price } = newQuotation;
+
+    if (!productId.trim()) {
+      toast.error("Product ID is required");
+      return;
+    }
+    if (!price.trim()) {
+      toast.error("Price is required");
+      return;
+    }
+    const priceNum = Number(price);
+    if (Number.isNaN(priceNum) || priceNum <= 0) {
+      toast.error("Price must be a positive number");
+      return;
+    }
+
+    const payload = {
+      productId: productId.trim(),
+      details: (details || "").trim(),
+      price: priceNum,
+    };
+
+    createQuotationMutation.mutate(payload);
+  };
+
   return (
     <div className="space-y-6">
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
-          <h2 className="text-2xl font-bold text-white">
-            Quotations Management
-          </h2>
+          <h2 className="text-2xl font-bold text-white">Quotations Management</h2>
           <p className="text-gray-300 mt-1">
             View and manage all quotations across the system
           </p>
         </div>
         <div className="flex space-x-3">
-          <button className="btn btn-primary">
+          <button
+            className="btn btn-primary"
+            onClick={() => setShowCreateModal(true)}
+          >
             <Plus className="w-4 h-4 mr-2" />
             Create Quotation
           </button>
@@ -180,9 +240,7 @@ const QuotationsTab: React.FC = () => {
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap">
                     <div className="text-sm text-white">
-                      {quotation.createdByModel === "Sales"
-                        ? "Sales Team"
-                        : "Admin"}
+                      {quotation.createdByModel === "Sales" ? "Sales Team" : "Admin"}
                     </div>
                     <div className="text-sm text-gray-300">
                       {new Date(quotation.createdAt).toLocaleDateString()}
@@ -190,16 +248,10 @@ const QuotationsTab: React.FC = () => {
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
                     <div className="flex items-center space-x-2">
-                      <button
-                        className="text-blue-400 hover:text-blue-300 p-1"
-                        title="View Details"
-                      >
+                      <button className="text-blue-400 hover:text-blue-300 p-1" title="View Details">
                         <Eye className="w-4 h-4" />
                       </button>
-                      <button
-                        className="text-yellow-400 hover:text-yellow-300 p-1"
-                        title="Edit"
-                      >
+                      <button className="text-yellow-400 hover:text-yellow-300 p-1" title="Edit">
                         <Edit className="w-4 h-4" />
                       </button>
                       <button
@@ -299,6 +351,72 @@ const QuotationsTab: React.FC = () => {
           </div>
         </div>
       </div>
+
+      {/* Create Quotation Modal */}
+      {showCreateModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center">
+          <div
+            className="absolute inset-0 bg-black/60"
+            onClick={() => {
+              if (!createQuotationMutation.isLoading) setShowCreateModal(false);
+            }}
+          />
+          <div className="relative w-full max-w-md bg-gray-900 rounded-lg shadow-lg p-6 z-10 border border-gray-700">
+            <h3 className="text-lg font-semibold text-white mb-4">Create Quotation</h3>
+            <form onSubmit={handleCreateQuotationSubmit} className="space-y-3">
+              <div>
+                <label className="text-sm text-gray-300">Product ID</label>
+                <input
+                  className="input w-full mt-1"
+                  value={newQuotation.productId}
+                  onChange={(e) => setNewQuotation((s) => ({ ...s, productId: e.target.value }))}
+                  required
+                />
+                <p className="text-xs text-gray-400 mt-1">Enter the product id (or product reference)</p>
+              </div>
+
+              <div>
+                <label className="text-sm text-gray-300">Details</label>
+                <textarea
+                  className="input w-full mt-1 min-h-[80px]"
+                  value={newQuotation.details}
+                  onChange={(e) => setNewQuotation((s) => ({ ...s, details: e.target.value }))}
+                />
+              </div>
+
+              <div>
+                <label className="text-sm text-gray-300">Price (INR)</label>
+                <input
+                  className="input w-full mt-1"
+                  value={newQuotation.price}
+                  onChange={(e) => setNewQuotation((s) => ({ ...s, price: e.target.value }))}
+                  required
+                />
+              </div>
+
+              <div className="flex justify-end space-x-2">
+                <button
+                  type="button"
+                  className="btn btn-ghost"
+                  onClick={() => {
+                    if (!createQuotationMutation.isLoading) setShowCreateModal(false);
+                  }}
+                  disabled={createQuotationMutation.isLoading}
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  className="btn btn-primary"
+                  disabled={createQuotationMutation.isLoading}
+                >
+                  {createQuotationMutation.isLoading ? "Creating..." : "Create Quotation"}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

@@ -1,8 +1,7 @@
 import React, { useState, useEffect } from "react";
-import { Plus, Search, Eye, Edit, Trash2, X } from "lucide-react";
+import { Plus, Search, Eye, Edit, Trash2 } from "lucide-react";
 import TaskImportExport from "./TaskImportExport";
 import { taskApi } from "@/lib/api.task";
-import toast from "react-hot-toast";
 
 interface Task {
   _id: string;
@@ -26,44 +25,19 @@ interface Task {
   };
 }
 
-interface TaskFormData {
-  title: string;
-  description: string;
-  priority: string;
-  status: string;
-  location: string;
-  dueDate: string;
-  assignedTo?: string[];
-  customer: string;
-  product?: string;
-}
-
-interface User {
-  _id: string;
-  fullName: string;
-  email: string;
-}
-
 const TaskManager: React.FC = () => {
   const [tasks, setTasks] = useState<Task[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState("");
   const [error, setError] = useState<string | null>(null);
-  const [showCreateModal, setShowCreateModal] = useState(false);
-  const [isSubmitting, setIsSubmitting] = useState(false);
-  const [workers, setWorkers] = useState<User[]>([]);
-  const [customers, setCustomers] = useState<User[]>([]);
-  const [formData, setFormData] = useState<TaskFormData>({
-    title: "",
-    description: "",
-    priority: "medium",
-    status: "pending",
-    location: "",
-    dueDate: "",
-    assignedTo: [],
-    customer: "",
-    product: "",
-  });
+
+  // view/edit modal state
+  const [selectedTask, setSelectedTask] = useState<Task | null>(null);
+  const [showViewModal, setShowViewModal] = useState(false);
+  const [showEditModal, setShowEditModal] = useState(false);
+
+  // NEW: saving state for edit
+  const [saving, setSaving] = useState(false);
 
   const fetchTasks = async () => {
     try {
@@ -78,86 +52,75 @@ const TaskManager: React.FC = () => {
     }
   };
 
-  const fetchWorkersAndCustomers = async () => {
-    try {
-      // Fetch workers - adjust this API endpoint based on your backend
-      const workersResponse = await fetch('/api/admin/workers');
-      if (workersResponse.ok) {
-        const workersData = await workersResponse.json();
-        setWorkers(workersData);
-      }
-
-      // Fetch customers - adjust this API endpoint based on your backend
-      const customersResponse = await fetch('/api/admin/customers');
-      if (customersResponse.ok) {
-        const customersData = await customersResponse.json();
-        setCustomers(customersData);
-      }
-    } catch (err) {
-      console.error("Error fetching workers/customers:", err);
-    }
-  };
-
   useEffect(() => {
     fetchTasks();
-    fetchWorkersAndCustomers();
   }, []);
-
-  const handleCreateTask = async (e: React.FormEvent) => {
-    e.preventDefault();
-    
-    if (!formData.title || !formData.description || !formData.customer || !formData.dueDate) {
-      toast.error("Please fill in all required fields");
-      return;
-    }
-
-    try {
-      setIsSubmitting(true);
-      const submitData = {
-        title: formData.title,
-        description: formData.description,
-        priority: formData.priority,
-        status: formData.status,
-        location: formData.location,
-        dueDate: formData.dueDate,
-        customer: formData.customer,
-        assignedTo: formData.assignedTo && formData.assignedTo.length > 0 ? formData.assignedTo : undefined,
-        product: formData.product || undefined,
-      };
-      
-      await taskApi.createTask(submitData);
-      toast.success("Task created successfully");
-      setShowCreateModal(false);
-      setFormData({
-        title: "",
-        description: "",
-        priority: "medium",
-        status: "pending",
-        location: "",
-        dueDate: "",
-        assignedTo: [],
-        customer: "",
-        product: "",
-      });
-      await fetchTasks();
-    } catch (err: any) {
-      console.error("Task creation error:", err);
-      toast.error(err.response?.data?.error || "Error creating task");
-    } finally {
-      setIsSubmitting(false);
-    }
-  };
 
   const handleDeleteTask = async (taskId: string) => {
     if (!window.confirm("Are you sure you want to delete this task?")) return;
 
     try {
       await taskApi.deleteTask(taskId);
-      toast.success("Task deleted successfully");
       await fetchTasks();
     } catch (err: any) {
-      toast.error(err.response?.data?.error || "Error deleting task");
+      setError(err.response?.data?.error || "Error deleting task");
     }
+  };
+
+  // NEW: view handler
+  const handleViewTask = (taskId: string) => {
+    console.log("View clicked:", taskId);
+    const task = tasks.find((t) => t._id === taskId) || null;
+    setSelectedTask(task);
+    setShowViewModal(true);
+  };
+
+  // NEW: edit handler (opens edit modal)
+  const handleEditTask = (taskId: string) => {
+    console.log("Edit clicked:", taskId);
+    const task = tasks.find((t) => t._id === taskId) || null;
+    setSelectedTask(task);
+    setShowEditModal(true);
+  };
+
+  // FIXED: actually call updateTask API and handle response
+  const handleSaveEdit = async (updated: Partial<Task>) => {
+    if (!selectedTask) return;
+    try {
+      setSaving(true);
+      setError(null);
+
+      // Call API to update on the server
+      const response = await taskApi.updateTask(selectedTask._id, updated);
+
+      // Assume server returns the updated task in response.data
+      const updatedTaskFromServer: Task =
+        response?.data && typeof response.data === "object"
+          ? response.data
+          : { ...selectedTask, ...updated } as Task;
+
+      // update local tasks list with server result
+      setTasks((prev) =>
+        prev.map((t) => (t._id === selectedTask._id ? updatedTaskFromServer : t))
+      );
+
+      // close modal and clear selection
+      setShowEditModal(false);
+      setSelectedTask(null);
+
+      // optionally re-fetch to keep in sync with server (uncomment if you want fresh list)
+      // await fetchTasks();
+    } catch (err: any) {
+      setError(err.response?.data?.error || "Error saving task");
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const closeModals = () => {
+    setShowViewModal(false);
+    setShowEditModal(false);
+    setSelectedTask(null);
   };
 
   const getStatusColor = (status: string) => {
@@ -205,10 +168,7 @@ const TaskManager: React.FC = () => {
             View and manage all tasks across the system
           </p>
         </div>
-        <button
-          onClick={() => setShowCreateModal(true)}
-          className="btn btn-primary flex items-center"
-        >
+        <button className="btn btn-primary flex items-center">
           <Plus className="w-4 h-4 mr-2" />
           Create Task
         </button>
@@ -265,7 +225,9 @@ const TaskManager: React.FC = () => {
                     {task.customer?.fullName || "No Customer"}
                   </td>
                   <td className="px-4 py-3">
-                    {new Date(task.dueDate).toLocaleDateString()}
+                    {task.dueDate
+                      ? new Date(task.dueDate).toLocaleDateString()
+                      : "—"}
                   </td>
                   <td className="px-4 py-3">
                     <span
@@ -277,13 +239,25 @@ const TaskManager: React.FC = () => {
                     </span>
                   </td>
                   <td className="px-4 py-3 space-x-2">
-                    <button className="text-blue-400 hover:text-blue-300">
+                    <button
+                      aria-label={`View ${task.title}`}
+                      title="View"
+                      className="text-blue-400 hover:text-blue-300"
+                      onClick={() => handleViewTask(task._id)}
+                    >
                       <Eye className="w-4 h-4" />
                     </button>
-                    <button className="text-yellow-400 hover:text-yellow-300">
+                    <button
+                      aria-label={`Edit ${task.title}`}
+                      title="Edit"
+                      className="text-yellow-400 hover:text-yellow-300"
+                      onClick={() => handleEditTask(task._id)}
+                    >
                       <Edit className="w-4 h-4" />
                     </button>
                     <button
+                      aria-label={`Delete ${task.title}`}
+                      title="Delete"
                       className="text-red-400 hover:text-red-300"
                       onClick={() => handleDeleteTask(task._id)}
                     >
@@ -297,193 +271,185 @@ const TaskManager: React.FC = () => {
         </div>
       </div>
 
-      {/* Create Task Modal */}
-      {showCreateModal && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-          <div className="bg-gray-800 rounded-lg shadow-xl max-w-2xl w-full max-h-[90vh] overflow-y-auto">
-            <div className="flex items-center justify-between p-6 border-b border-gray-700">
+      {/* VIEW MODAL */}
+      {showViewModal && selectedTask && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+          <div
+            className="absolute inset-0 bg-black/60"
+            onClick={closeModals}
+            aria-hidden
+          />
+          <div className="bg-gray-900 rounded-lg shadow-lg z-10 max-w-xl w-full p-6">
+            <div className="flex justify-between items-start">
               <h3 className="text-xl font-semibold text-white">
-                Create New Task
+                {selectedTask.title}
               </h3>
               <button
-                onClick={() => setShowCreateModal(false)}
-                className="text-gray-400 hover:text-white"
+                className="text-gray-300 hover:text-white"
+                onClick={closeModals}
+                aria-label="Close view"
               >
-                <X className="w-6 h-6" />
+                ✕
               </button>
             </div>
 
-            <form onSubmit={handleCreateTask} className="p-6 space-y-4">
-              <div>
-                <label className="block text-sm font-medium text-gray-300 mb-2">
-                  Title <span className="text-red-500">*</span>
-                </label>
-                <input
-                  type="text"
-                  value={formData.title}
-                  onChange={(e) =>
-                    setFormData({ ...formData, title: e.target.value })
-                  }
-                  className="w-full px-4 py-2 bg-gray-700 text-white rounded-lg focus:ring-2 focus:ring-primary-500"
-                  required
-                />
-              </div>
+            <div className="mt-4 text-gray-300 space-y-2">
+              <p>
+                <strong>Description: </strong>
+                {selectedTask.description || "—"}
+              </p>
+              <p>
+                <strong>Location: </strong>
+                {selectedTask.location || "—"}
+              </p>
+              <p>
+                <strong>Assigned To: </strong>
+                {selectedTask.assignedTo?.fullName || "Unassigned"}
+              </p>
+              <p>
+                <strong>Customer: </strong>
+                {selectedTask.customer?.fullName || "No Customer"}
+              </p>
+              <p>
+                <strong>Due Date: </strong>
+                {selectedTask.dueDate
+                  ? new Date(selectedTask.dueDate).toLocaleString()
+                  : "—"}
+              </p>
+              <p>
+                <strong>Status: </strong>
+                {selectedTask.status}
+              </p>
+            </div>
 
-              <div>
-                <label className="block text-sm font-medium text-gray-300 mb-2">
-                  Description <span className="text-red-500">*</span>
-                </label>
-                <textarea
-                  value={formData.description}
-                  onChange={(e) =>
-                    setFormData({ ...formData, description: e.target.value })
-                  }
-                  rows={3}
-                  className="w-full px-4 py-2 bg-gray-700 text-white rounded-lg focus:ring-2 focus:ring-primary-500"
-                  required
-                />
-              </div>
-
-              <div>
-                <label className="block text-sm font-medium text-gray-300 mb-2">
-                  Customer <span className="text-red-500">*</span>
-                </label>
-                <select
-                  value={formData.customer}
-                  onChange={(e) =>
-                    setFormData({ ...formData, customer: e.target.value })
-                  }
-                  className="w-full px-4 py-2 bg-gray-700 text-white rounded-lg focus:ring-2 focus:ring-primary-500"
-                  required
-                >
-                  <option value="">Select a customer</option>
-                  {customers.map((customer) => (
-                    <option key={customer._id} value={customer._id}>
-                      {customer.fullName} - {customer.email}
-                    </option>
-                  ))}
-                </select>
-              </div>
-
-              <div>
-                <label className="block text-sm font-medium text-gray-300 mb-2">
-                  Assign To Workers (Optional)
-                </label>
-                <select
-                  multiple
-                  value={formData.assignedTo}
-                  onChange={(e) => {
-                    const selected = Array.from(e.target.selectedOptions, option => option.value);
-                    setFormData({ ...formData, assignedTo: selected });
-                  }}
-                  className="w-full px-4 py-2 bg-gray-700 text-white rounded-lg focus:ring-2 focus:ring-primary-500"
-                  size={4}
-                >
-                  {workers.map((worker) => (
-                    <option key={worker._id} value={worker._id}>
-                      {worker.fullName} - {worker.email}
-                    </option>
-                  ))}
-                </select>
-                <p className="text-xs text-gray-400 mt-1">Hold Ctrl/Cmd to select multiple workers</p>
-              </div>
-
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div>
-                  <label className="block text-sm font-medium text-gray-300 mb-2">
-                    Priority
-                  </label>
-                  <select
-                    value={formData.priority}
-                    onChange={(e) =>
-                      setFormData({ ...formData, priority: e.target.value })
-                    }
-                    className="w-full px-4 py-2 bg-gray-700 text-white rounded-lg focus:ring-2 focus:ring-primary-500"
-                  >
-                    <option value="low">Low</option>
-                    <option value="medium">Medium</option>
-                    <option value="high">High</option>
-                  </select>
-                </div>
-
-                <div>
-                  <label className="block text-sm font-medium text-gray-300 mb-2">
-                    Status
-                  </label>
-                  <select
-                    value={formData.status}
-                    onChange={(e) =>
-                      setFormData({ ...formData, status: e.target.value })
-                    }
-                    className="w-full px-4 py-2 bg-gray-700 text-white rounded-lg focus:ring-2 focus:ring-primary-500"
-                  >
-                    <option value="pending">Pending</option>
-                    <option value="in-progress">In Progress</option>
-                    <option value="completed">Completed</option>
-                    <option value="cancelled">Cancelled</option>
-                  </select>
-                </div>
-              </div>
-
-              <div>
-                <label className="block text-sm font-medium text-gray-300 mb-2">
-                  Location
-                </label>
-                <input
-                  type="text"
-                  value={formData.location}
-                  onChange={(e) =>
-                    setFormData({ ...formData, location: e.target.value })
-                  }
-                  className="w-full px-4 py-2 bg-gray-700 text-white rounded-lg focus:ring-2 focus:ring-primary-500"
-                />
-              </div>
-
-              <div>
-                <label className="block text-sm font-medium text-gray-300 mb-2">
-                  Due Date <span className="text-red-500">*</span>
-                </label>
-                <input
-                  type="date"
-                  value={formData.dueDate}
-                  onChange={(e) =>
-                    setFormData({ ...formData, dueDate: e.target.value })
-                  }
-                  className="w-full px-4 py-2 bg-gray-700 text-white rounded-lg focus:ring-2 focus:ring-primary-500"
-                  required
-                />
-              </div>
-
-              <div className="flex justify-end space-x-3 pt-4 border-t border-gray-700">
-                <button
-                  type="button"
-                  onClick={() => setShowCreateModal(false)}
-                  className="px-4 py-2 text-gray-300 hover:text-white"
-                  disabled={isSubmitting}
-                >
-                  Cancel
-                </button>
-                <button
-                  type="submit"
-                  disabled={isSubmitting}
-                  className="btn btn-primary disabled:opacity-50 disabled:cursor-not-allowed"
-                >
-                  {isSubmitting ? (
-                    <div className="flex items-center">
-                      <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2" />
-                      Creating...
-                    </div>
-                  ) : (
-                    "Create Task"
-                  )}
-                </button>
-              </div>
-            </form>
+            <div className="mt-6 flex justify-end space-x-2">
+              <button
+                className="btn btn-secondary"
+                onClick={() => {
+                  // optionally move to edit directly
+                  setShowViewModal(false);
+                  setShowEditModal(true);
+                }}
+              >
+                Edit
+              </button>
+              <button className="btn" onClick={closeModals}>
+                Close
+              </button>
+            </div>
           </div>
         </div>
+      )}
+
+      {/* EDIT MODAL */}
+      {showEditModal && selectedTask && (
+        <EditModal
+          task={selectedTask}
+          onClose={closeModals}
+          onSave={handleSaveEdit}
+          saving={saving}
+        />
       )}
     </div>
   );
 };
 
 export default TaskManager;
+
+/* ---------- Small EditModal component below (in same file for simplicity) ---------- */
+
+const EditModal: React.FC<{
+  task: Task;
+  onClose: () => void;
+  onSave: (updated: Partial<Task>) => void;
+  saving?: boolean;
+}> = ({ task, onClose, onSave, saving = false }) => {
+  const [title, setTitle] = useState(task.title || "");
+  const [description, setDescription] = useState(task.description || "");
+  const [status, setStatus] = useState(task.status || "");
+  const [dueDate, setDueDate] = useState(
+    task.dueDate ? new Date(task.dueDate).toISOString().slice(0, 16) : ""
+  );
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+      <div
+        className="absolute inset-0 bg-black/60"
+        onClick={onClose}
+        aria-hidden
+      />
+      <div className="bg-gray-900 rounded-lg shadow-lg z-10 max-w-2xl w-full p-6">
+        <div className="flex justify-between items-center">
+          <h3 className="text-xl font-semibold text-white">Edit Task</h3>
+          <button className="text-gray-300 hover:text-white" onClick={onClose}>
+            ✕
+          </button>
+        </div>
+
+        <div className="mt-4 space-y-4 text-gray-300">
+          <div>
+            <label className="block text-sm mb-1">Title</label>
+            <input
+              value={title}
+              onChange={(e) => setTitle(e.target.value)}
+              className="w-full p-2 rounded bg-gray-800 text-white"
+            />
+          </div>
+
+          <div>
+            <label className="block text-sm mb-1">Description</label>
+            <textarea
+              value={description}
+              onChange={(e) => setDescription(e.target.value)}
+              className="w-full p-2 rounded bg-gray-800 text-white"
+            />
+          </div>
+
+          <div>
+            <label className="block text-sm mb-1">Status</label>
+            <select
+              value={status}
+              onChange={(e) => setStatus(e.target.value)}
+              className="w-full p-2 rounded bg-gray-800 text-white"
+            >
+              <option value="pending">Pending</option>
+              <option value="in-progress">In-Progress</option>
+              <option value="completed">Completed</option>
+              <option value="cancelled">Cancelled</option>
+            </select>
+          </div>
+
+          <div>
+            <label className="block text-sm mb-1">Due Date</label>
+            <input
+              type="datetime-local"
+              value={dueDate}
+              onChange={(e) => setDueDate(e.target.value)}
+              className="w-full p-2 rounded bg-gray-800 text-white"
+            />
+          </div>
+        </div>
+
+        <div className="mt-6 flex justify-end space-x-2">
+          <button
+            className="btn btn-primary"
+            onClick={() =>
+              onSave({
+                title,
+                description,
+                status,
+                dueDate: dueDate ? new Date(dueDate).toISOString() : undefined,
+              })
+            }
+            disabled={saving}
+          >
+            {saving ? "Saving..." : "Save"}
+          </button>
+          <button className="btn" onClick={onClose} disabled={saving}>
+            Cancel
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+};

@@ -171,6 +171,84 @@ const QuotationsTab: React.FC = () => {
         </div>
       </div>
 
+
+      {/* Summary Stats */}
+      <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
+        <div className="bg-gray-800 rounded-lg p-6 border border-gray-700">
+          <div className="flex items-center">
+            <div className="flex-shrink-0">
+              <div className="w-8 h-8 bg-blue-500 rounded-lg flex items-center justify-center">
+                <span className="text-white font-semibold text-sm">N</span>
+              </div>
+            </div>
+            <div className="ml-4">
+              <p className="text-sm font-medium text-gray-300">New</p>
+              <p className="text-2xl font-bold text-white">
+                {(quotations || []).filter((q) => q.status === "new").length}
+              </p>
+            </div>
+          </div>
+        </div>
+
+        <div className="bg-gray-800 rounded-lg p-6 border border-gray-700">
+          <div className="flex items-center">
+            <div className="flex-shrink-0">
+              <div className="w-8 h-8 bg-purple-500 rounded-lg flex items-center justify-center">
+                <span className="text-white font-semibold text-sm">S</span>
+              </div>
+            </div>
+            <div className="ml-4">
+              <p className="text-sm font-medium text-gray-300">Sent</p>
+              <p className="text-2xl font-bold text-white">
+                {
+                  (quotations || []).filter(
+                    (q) => q.status === "quotation sent"
+                  ).length
+                }
+              </p>
+            </div>
+          </div>
+        </div>
+
+        <div className="bg-gray-800 rounded-lg p-6 border border-gray-700">
+          <div className="flex items-center">
+            <div className="flex-shrink-0">
+              <div className="w-8 h-8 bg-green-500 rounded-lg flex items-center justify-center">
+                <span className="text-white font-semibold text-sm">C</span>
+              </div>
+            </div>
+            <div className="ml-4">
+              <p className="text-sm font-medium text-gray-300">Converted</p>
+              <p className="text-2xl font-bold text-white">
+                {
+                  (quotations || []).filter((q) => q.status === "converted")
+                    .length
+                }
+              </p>
+            </div>
+          </div>
+        </div>
+
+        <div className="bg-gray-800 rounded-lg p-6 border border-gray-700">
+          <div className="flex items-center">
+            <div className="flex-shrink-0">
+              <div className="w-8 h-8 bg-yellow-500 rounded-lg flex items-center justify-center">
+                <span className="text-white font-semibold text-sm">$</span>
+              </div>
+            </div>
+            <div className="ml-4">
+              <p className="text-sm font-medium text-gray-300">Total Value</p>
+              <p className="text-2xl font-bold text-white">
+                {formatPrice(
+                  (quotations || []).reduce((sum, q) => sum + q.price, 0)
+                )}
+              </p>
+            </div>
+          </div>
+        </div>
+      </div>
+
+
       {/* Search */}
       <div className="flex items-center space-x-4">
         <div className="flex-1 relative">
@@ -275,83 +353,7 @@ const QuotationsTab: React.FC = () => {
           </table>
         </div>
       </div>
-
-      {/* Summary Stats */}
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
-        <div className="bg-gray-800 rounded-lg p-6 border border-gray-700">
-          <div className="flex items-center">
-            <div className="flex-shrink-0">
-              <div className="w-8 h-8 bg-blue-500 rounded-lg flex items-center justify-center">
-                <span className="text-white font-semibold text-sm">N</span>
-              </div>
-            </div>
-            <div className="ml-4">
-              <p className="text-sm font-medium text-gray-300">New</p>
-              <p className="text-2xl font-bold text-white">
-                {(quotations || []).filter((q) => q.status === "new").length}
-              </p>
-            </div>
-          </div>
-        </div>
-
-        <div className="bg-gray-800 rounded-lg p-6 border border-gray-700">
-          <div className="flex items-center">
-            <div className="flex-shrink-0">
-              <div className="w-8 h-8 bg-purple-500 rounded-lg flex items-center justify-center">
-                <span className="text-white font-semibold text-sm">S</span>
-              </div>
-            </div>
-            <div className="ml-4">
-              <p className="text-sm font-medium text-gray-300">Sent</p>
-              <p className="text-2xl font-bold text-white">
-                {
-                  (quotations || []).filter(
-                    (q) => q.status === "quotation sent"
-                  ).length
-                }
-              </p>
-            </div>
-          </div>
-        </div>
-
-        <div className="bg-gray-800 rounded-lg p-6 border border-gray-700">
-          <div className="flex items-center">
-            <div className="flex-shrink-0">
-              <div className="w-8 h-8 bg-green-500 rounded-lg flex items-center justify-center">
-                <span className="text-white font-semibold text-sm">C</span>
-              </div>
-            </div>
-            <div className="ml-4">
-              <p className="text-sm font-medium text-gray-300">Converted</p>
-              <p className="text-2xl font-bold text-white">
-                {
-                  (quotations || []).filter((q) => q.status === "converted")
-                    .length
-                }
-              </p>
-            </div>
-          </div>
-        </div>
-
-        <div className="bg-gray-800 rounded-lg p-6 border border-gray-700">
-          <div className="flex items-center">
-            <div className="flex-shrink-0">
-              <div className="w-8 h-8 bg-yellow-500 rounded-lg flex items-center justify-center">
-                <span className="text-white font-semibold text-sm">$</span>
-              </div>
-            </div>
-            <div className="ml-4">
-              <p className="text-sm font-medium text-gray-300">Total Value</p>
-              <p className="text-2xl font-bold text-white">
-                {formatPrice(
-                  (quotations || []).reduce((sum, q) => sum + q.price, 0)
-                )}
-              </p>
-            </div>
-          </div>
-        </div>
-      </div>
-
+              
       {/* Create Quotation Modal */}
       {showCreateModal && (
         <div className="fixed inset-0 z-50 flex items-center justify-center">

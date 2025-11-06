@@ -5,7 +5,6 @@ import {
   User,
   Calendar,
   Package,
-  MessageSquare,
   Send,
   Clock,
   AlertCircle,
@@ -33,19 +32,46 @@ const TaskModal: React.FC<TaskModalProps> = ({ task, onClose }) => {
   const [newStatus, setNewStatus] = useState(task.status);
   const [selectedFiles, setSelectedFiles] = useState<File[]>([]);
 
+  // Keep a local copy of comments so UI updates immediately after add
+  const [comments, setComments] = useState(task.comments ?? []);
+
+  // Status updates go through update-status API
   const updateTaskMutation = useMutation(
-    (data: { status?: string; comment?: string }) =>
-      tasksAPI.updateTaskStatus(task._id, data),
+    (data: { status?: string }) => tasksAPI.updateTaskStatus(task._id, data),
     {
       onSuccess: () => {
         toast.success("Task updated successfully");
-        setNewComment("");
       },
       onError: () => {
         toast.error("Failed to update task");
       },
     }
   );
+
+const addCommentMutation = useMutation(
+  (commentText: string) => tasksAPI.addTaskComment(task._id, commentText),
+  {
+    onSuccess: (res: any) => {
+      const added = res?.data?.comment;
+      setComments((prev) => [
+        ...prev,
+        added ?? {
+          _id: crypto.randomUUID?.() || String(Date.now()),
+          userType: "Worker",
+          comment: newComment.trim(),
+          timestamp: new Date().toISOString(),
+        },
+      ]);
+      setNewComment("");
+      toast.success("Comment added");
+    },
+    onError: (err: any) => {
+      const msg = err?.response?.data?.error || "Failed to add comment";
+      toast.error(msg);
+    },
+  }
+);
+
 
   const markCompleteMutation = useMutation(
     () => tasksAPI.markTaskComplete(task._id),
@@ -105,19 +131,14 @@ const TaskModal: React.FC<TaskModalProps> = ({ task, onClose }) => {
 
   const handleStatusUpdate = () => {
     if (newStatus !== task.status) {
-      updateTaskMutation.mutate({
-        status: newStatus,
-        comment: `Status changed from ${task.status} to ${newStatus}`,
-      });
+      updateTaskMutation.mutate({ status: newStatus });
     }
   };
 
   const handleAddComment = () => {
-    if (newComment.trim()) {
-      updateTaskMutation.mutate({
-        comment: newComment.trim(),
-      });
-    }
+    const text = newComment.trim();
+    if (!text) return;
+    addCommentMutation.mutate(text);
   };
 
   const handleMarkComplete = () => {
@@ -190,8 +211,8 @@ const TaskModal: React.FC<TaskModalProps> = ({ task, onClose }) => {
 
                 {/* Comments List */}
                 <div className="space-y-4 mb-4">
-                  {task.comments && task.comments.length > 0 ? (
-                    task.comments.map((comment) => (
+                  {comments && comments.length > 0 ? (
+                    comments.map((comment) => (
                       <div
                         key={comment._id}
                         className="bg-gray-700 rounded-lg p-4"
@@ -202,7 +223,11 @@ const TaskModal: React.FC<TaskModalProps> = ({ task, onClose }) => {
                           </span>
                           <span className="text-sm text-gray-400">
                             {format(
-                              new Date(comment.timestamp),
+                              new Date(
+                                (comment as any).timestamp ||
+                                  (comment as any).createdAt ||
+                                  new Date().toISOString()
+                              ),
                               "MMM dd, yyyy HH:mm"
                             )}
                           </span>
@@ -228,9 +253,7 @@ const TaskModal: React.FC<TaskModalProps> = ({ task, onClose }) => {
                   />
                   <button
                     onClick={handleAddComment}
-                    disabled={
-                      !newComment.trim() || updateTaskMutation.isLoading
-                    }
+                    disabled={!newComment.trim() || addCommentMutation.isLoading}
                     className="btn btn-primary self-end"
                   >
                     <Send className="w-4 h-4" />
@@ -319,8 +342,7 @@ const TaskModal: React.FC<TaskModalProps> = ({ task, onClose }) => {
                         });
 
                         try {
-                          // Note: This endpoint doesn't exist in the API yet
-                          // We need to add it to tasksAPI and backend
+                          // TODO: implement in API + backend
                           console.log("Uploading files:", formData);
                           toast.success(
                             `${selectedFiles.length} files uploaded successfully`
@@ -383,7 +405,6 @@ const TaskModal: React.FC<TaskModalProps> = ({ task, onClose }) => {
                     <div className="font-medium text-white">
                       {task.customer?.fullName}
                     </div>
-                    {/* Show contact info only for in-progress or completed tasks */}
                     {(task.status === "in-progress" ||
                       task.status === "completed") && (
                       <div className="space-y-1 mt-1">
@@ -526,7 +547,7 @@ const TaskModal: React.FC<TaskModalProps> = ({ task, onClose }) => {
             </div>
           </div>
         </div>
-      </div>
+      </div> 
     </div>
   );
 };

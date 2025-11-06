@@ -136,6 +136,8 @@ export const tasksAPI = {
     api.put(`/tasks/worker/complete/${taskId}`),
   updateTaskStatus: (taskId: string, data: any) =>
     api.put(`/tasks/worker/update-status/${taskId}`, data),
+   addTaskComment: (taskId: string, comment: string) =>
+    api.post(`/tasks/${taskId}/comments`, { comment }),
 };
 
 // Sales API

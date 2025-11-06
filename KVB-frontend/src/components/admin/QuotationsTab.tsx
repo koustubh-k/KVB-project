@@ -19,6 +19,11 @@ const QuotationsTab: React.FC = () => {
     price: "",
   });
 
+  // Selection + modals for view/edit
+  const [selectedQuotation, setSelectedQuotation] = useState<Quotation | null>(null);
+  const [showQuotationView, setShowQuotationView] = useState(false);
+  const [showQuotationEdit, setShowQuotationEdit] = useState(false);
+
   // Fetch quotations
   const {
     data: quotations,
@@ -46,6 +51,27 @@ const QuotationsTab: React.FC = () => {
           err?.message ||
           "Failed to create quotation";
         console.error("Failed to create quotation:", err);
+        toast.error(msg);
+      },
+    }
+  );
+
+  // Update quotation mutation (for Edit)
+  const updateQuotationMutation = useMutation(
+    ({ id, data }: { id: string; data: Partial<Quotation> }) =>
+      adminAPI.updateQuotation(id, data),
+    {
+      onSuccess: () => {
+        queryClient.invalidateQueries("admin-quotations");
+        toast.success("Quotation updated");
+        setShowQuotationEdit(false);
+        setSelectedQuotation(null);
+      },
+      onError: (err: any) => {
+        const msg =
+          err?.response?.data?.message ||
+          err?.response?.data?.error ||
+          "Failed to update quotation";
         toast.error(msg);
       },
     }
@@ -150,6 +176,16 @@ const QuotationsTab: React.FC = () => {
     createQuotationMutation.mutate(payload);
   };
 
+  // NEW: View / Edit handlers
+  const handleViewQuotation = (quotation: Quotation) => {
+    setSelectedQuotation(quotation);
+    setShowQuotationView(true);
+  };
+  const handleEditQuotation = (quotation: Quotation) => {
+    setSelectedQuotation(quotation);
+    setShowQuotationEdit(true);
+  };
+
   return (
     <div className="space-y-6">
       {/* Header */}
@@ -170,7 +206,6 @@ const QuotationsTab: React.FC = () => {
           </button>
         </div>
       </div>
-
 
       {/* Summary Stats */}
       <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
@@ -247,7 +282,6 @@ const QuotationsTab: React.FC = () => {
           </div>
         </div>
       </div>
-
 
       {/* Search */}
       <div className="flex items-center space-x-4">
@@ -326,10 +360,18 @@ const QuotationsTab: React.FC = () => {
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
                     <div className="flex items-center space-x-2">
-                      <button className="text-blue-400 hover:text-blue-300 p-1" title="View Details">
+                      <button
+                        className="text-blue-400 hover:text-blue-300 p-1"
+                        title="View Details"
+                        onClick={() => handleViewQuotation(quotation)}
+                      >
                         <Eye className="w-4 h-4" />
                       </button>
-                      <button className="text-yellow-400 hover:text-yellow-300 p-1" title="Edit">
+                      <button
+                        className="text-yellow-400 hover:text-yellow-300 p-1"
+                        title="Edit"
+                        onClick={() => handleEditQuotation(quotation)}
+                      >
                         <Edit className="w-4 h-4" />
                       </button>
                       <button
@@ -353,7 +395,7 @@ const QuotationsTab: React.FC = () => {
           </table>
         </div>
       </div>
-              
+
       {/* Create Quotation Modal */}
       {showCreateModal && (
         <div className="fixed inset-0 z-50 flex items-center justify-center">
@@ -419,8 +461,119 @@ const QuotationsTab: React.FC = () => {
           </div>
         </div>
       )}
+
+      {/* View / Edit Modals for selected quotation */}
+      {showQuotationView && selectedQuotation && (
+        <QuotationViewModal
+          quotation={selectedQuotation}
+          onClose={() => {
+            setShowQuotationView(false);
+            setSelectedQuotation(null);
+          }}
+          formatPrice={formatPrice}
+        />
+      )}
+
+      {showQuotationEdit && selectedQuotation && (
+        <QuotationEditModal
+          quotation={selectedQuotation}
+          onClose={() => {
+            setShowQuotationEdit(false);
+            setSelectedQuotation(null);
+          }}
+          onSave={(data) => updateQuotationMutation.mutate({ id: selectedQuotation._id, data })}
+          saving={updateQuotationMutation.isLoading}
+        />
+      )}
     </div>
   );
 };
 
 export default QuotationsTab;
+
+/* ----------------- Modals ----------------- */
+
+const QuotationViewModal: React.FC<{
+  quotation: Quotation;
+  onClose: () => void;
+  formatPrice: (p: number) => string;
+}> = ({ quotation, onClose, formatPrice }) => {
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+      <div className="absolute inset-0 bg-black/60" onClick={onClose} aria-hidden />
+      <div className="relative w-full max-w-lg bg-gray-900 rounded-lg shadow-lg p-6 z-10 border border-gray-700">
+        <div className="flex justify-between items-start">
+          <h3 className="text-lg font-semibold text-white">Quotation Details</h3>
+          <button className="text-gray-300 hover:text-white" onClick={onClose}>✕</button>
+        </div>
+        <div className="mt-4 text-gray-300 space-y-2">
+          <p><strong>Customer:</strong> {quotation.customerId?.fullName || "—"}</p>
+          <p><strong>Email:</strong> {quotation.customerId?.email || "—"}</p>
+          <p><strong>Product:</strong> {quotation.productId?.name || "—"}</p>
+          <p><strong>Price:</strong> {formatPrice(quotation.price)}</p>
+          <p><strong>Status:</strong> {quotation.status}</p>
+          <p><strong>Details:</strong> {quotation.details || "—"}</p>
+        </div>
+        <div className="mt-6 flex justify-end">
+          <button className="btn" onClick={onClose}>Close</button>
+        </div>
+      </div>
+    </div>
+  );
+};
+
+const QuotationEditModal: React.FC<{
+  quotation: Quotation;
+  onClose: () => void;
+  onSave: (data: Partial<Quotation>) => void;
+  saving?: boolean;
+}> = ({ quotation, onClose, onSave, saving = false }) => {
+  const [status, setStatus] = useState(quotation.status || "new");
+  const [price, setPrice] = useState<number>(quotation.price || 0);
+  const [details, setDetails] = useState(quotation.details || "");
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+      <div className="absolute inset-0 bg-black/60" onClick={onClose} aria-hidden />
+      <div className="relative w-full max-w-lg bg-gray-900 rounded-lg shadow-lg p-6 z-10 border border-gray-700">
+        <div className="flex justify-between items-start">
+          <h3 className="text-lg font-semibold text-white">Edit Quotation</h3>
+          <button className="text-gray-300 hover:text-white" onClick={onClose}>✕</button>
+        </div>
+
+        <div className="mt-4 grid grid-cols-2 gap-3 text-gray-300">
+          <div>
+            <label className="text-sm">Status</label>
+            <select className="input mt-1 w-full" value={status} onChange={(e) => setStatus(e.target.value)}>
+              <option value="new">new</option>
+              <option value="contacted">contacted</option>
+              <option value="quotation sent">quotation sent</option>
+              <option value="closed">closed</option>
+              <option value="converted">converted</option>
+            </select>
+          </div>
+          <div>
+            <label className="text-sm">Price</label>
+            <input
+              className="input mt-1 w-full"
+              type="number"
+              value={price}
+              onChange={(e) => setPrice(Number(e.target.value))}
+            />
+          </div>
+          <div className="col-span-2">
+            <label className="text-sm">Details</label>
+            <textarea className="input mt-1 w-full min-h-[80px]" value={details} onChange={(e) => setDetails(e.target.value)} />
+          </div>
+        </div>
+
+        <div className="mt-6 flex justify-end space-x-2">
+          <button className="btn btn-primary" onClick={() => onSave({ status, price, details })} disabled={saving}>
+            {saving ? "Saving..." : "Save"}
+          </button>
+          <button className="btn" onClick={onClose} disabled={saving}>Cancel</button>
+        </div>
+      </div>
+    </div>
+  );
+};

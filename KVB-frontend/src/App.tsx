@@ -3,6 +3,7 @@ import { AuthProvider } from "@/contexts/AuthContext";
 import ProtectedRoute from "@/components/ProtectedRoute";
 import Navbar from "@/components/Navbar";
 import LoginPage from "@/pages/LoginPage";
+import AdminLoginPage from "@/pages/AdminLoginPage"
 import SignupPage from "@/pages/SignupPage";
 import CRMPage from "@/pages/CRMPage";
 import AdminDashboard from "@/pages/AdminDashboard";
@@ -20,9 +21,10 @@ function App() {
             {/* Public routes */}
             <Route path="/" element={<LandingPage />} />
             <Route path="/login" element={<LoginPage />} />
+            <Route path="/admin-login" element={<AdminLoginPage />} />
             <Route path="/signup" element={<SignupPage />} />
             <Route path="/crm" element={<CRMPage />} />
-
+            
             {/* Protected routes */}
             <Route
               path="/admin"
@@ -48,7 +50,7 @@ function App() {
                 </ProtectedRoute>
               }
             />
-
+            
             {/* Catch all route */}
             <Route path="*" element={<Navigate to="/" replace />} />
           </Routes>

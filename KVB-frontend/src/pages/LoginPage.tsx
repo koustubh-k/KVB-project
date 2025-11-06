@@ -7,22 +7,11 @@ import { LoginFormData } from "@/types";
 
 const LoginPage: React.FC = () => {
   const [showPassword, setShowPassword] = useState(false);
-  const [userType, setUserType] = useState<
-    "customer" | "worker" | "admin" | "sales"
-  >("customer");
   const { login, loading } = useAuth();
   const navigate = useNavigate();
   const location = useLocation();
 
-  const from =
-    location.state?.from?.pathname ||
-    (userType === "admin"
-      ? "/admin"
-      : userType === "worker"
-        ? "/worker"
-        : userType === "sales"
-          ? "/sales"
-          : "/crm");
+  const from = location.state?.from?.pathname || "/crm";
 
   const {
     register,
@@ -32,7 +21,7 @@ const LoginPage: React.FC = () => {
 
   const onSubmit = async (data: LoginFormData) => {
     try {
-      await login(data.email, data.password, userType);
+      await login(data.email, data.password, "customer");
       navigate(from, { replace: true });
     } catch (error) {
       // Error is handled in the auth context
@@ -47,7 +36,7 @@ const LoginPage: React.FC = () => {
             <LogIn className="h-6 w-6 text-white" />
           </div>
           <h2 className="mt-6 text-center text-3xl font-extrabold text-white">
-            Sign in to your account
+            Customer Sign In
           </h2>
           <p className="mt-2 text-center text-sm text-gray-300">
             Or{" "}
@@ -61,33 +50,6 @@ const LoginPage: React.FC = () => {
         </div>
 
         <form className="mt-8 space-y-6" onSubmit={handleSubmit(onSubmit)}>
-          {/* User Type Selection */}
-          <div>
-            <label className="block text-sm font-medium text-gray-200 mb-2">
-              Login as
-            </label>
-            <div className="flex flex-wrap gap-4">
-              {(["customer", "worker", "admin", "sales"] as const).map(
-                (type) => (
-                  <label key={type} className="flex items-center">
-                    <input
-                      type="radio"
-                      value={type}
-                      checked={userType === type}
-                      onChange={(e) =>
-                        setUserType(e.target.value as typeof userType)
-                      }
-                      className="h-4 w-4 text-primary-600 focus:ring-primary-500 border-gray-600"
-                    />
-                    <span className="ml-2 text-sm text-gray-200 capitalize">
-                      {type}
-                    </span>
-                  </label>
-                )
-              )}
-            </div>
-          </div>
-
           <div className="space-y-4">
             {/* Email */}
             <div>
@@ -171,7 +133,7 @@ const LoginPage: React.FC = () => {
             </button>
           </div>
 
-          <div className="text-center">
+          <div className="text-center space-y-2">
             <p className="text-sm text-gray-300">
               Don't have an account?{" "}
               <Link
@@ -179,6 +141,15 @@ const LoginPage: React.FC = () => {
                 className="font-medium text-primary-600 hover:text-primary-500"
               >
                 Sign up here
+              </Link>
+            </p>
+            <p className="text-sm text-gray-400">
+              Staff member?{" "}
+              <Link
+                to="/admin-login"
+                className="font-medium text-primary-600 hover:text-primary-500"
+              >
+                Login here
               </Link>
             </p>
           </div>

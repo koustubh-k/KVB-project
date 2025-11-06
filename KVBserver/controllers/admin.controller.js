@@ -669,6 +669,37 @@ export const bulkImportProducts = async (req, res) => {
 // @desc    Bulk import tasks from Excel
 // @route   POST /api/admin/bulk-import/tasks
 // @access  Private (Admin)
+const parseCellText = (cell) => {
+  if (!cell || cell.value === null || cell.value === undefined) return "";
+  // ExcelJS cell.value can be string, number, Date, or object (rich text/formula)
+  if (cell.text) return String(cell.text).trim();         // preferred: cell.text gives user-visible value
+  if (cell.value instanceof Date) return cell.value;      // return Date as-is
+  if (typeof cell.value === "object") {
+    // try common object shapes
+    if (cell.value.result) return String(cell.value.result).trim();
+    if (cell.value.richText) return cell.value.richText.map(rt => rt.text).join("").trim();
+    if (cell.value.text) return String(cell.value.text).trim();
+    return String(cell.value).trim();
+  }
+  return String(cell.value).trim();
+};
+
+const parseObjectIdSingle = (raw) => {
+  if (!raw) return undefined;
+  const s = String(raw).replace(/[\s'"\[\]]+/g, "").trim(); // remove brackets/quotes/spaces
+  return mongoose.isValidObjectId(s) ? s : undefined;
+};
+
+const parseObjectIdList = (raw) => {
+  if (!raw) return undefined;
+  // accept comma separated like "id1, id2" or single id
+  const cleaned = String(raw).trim().replace(/^\[|\]$/g, ""); // remove surrounding []
+  const parts = cleaned.split(",").map(p => p.replace(/['"\s]+/g, "").trim()).filter(Boolean);
+  const valid = parts.filter(p => mongoose.isValidObjectId(p));
+  return valid.length ? valid : undefined;
+};
+
+// controller
 export const bulkImportTasks = async (req, res) => {
   try {
     if (!req.file) {
@@ -683,23 +714,59 @@ export const bulkImportTasks = async (req, res) => {
     worksheet.eachRow((row, rowNumber) => {
       if (rowNumber === 1) return; // Skip header row
 
+      const title = parseCellText(row.getCell(1));
+      const description = parseCellText(row.getCell(2));
+      const priority = parseCellText(row.getCell(3)) || "medium";
+      const status = parseCellText(row.getCell(4)) || "pending";
+      const location = parseCellText(row.getCell(5));
+
+      // due date: Excel may store real Date or string
+      let dueDateCell = row.getCell(6);
+      let dueDateValue = null;
+      if (dueDateCell && dueDateCell.value) {
+        if (dueDateCell.value instanceof Date) {
+          dueDateValue = dueDateCell.value;
+        } else {
+          const maybe = parseCellText(dueDateCell);
+          const parsed = new Date(maybe);
+          if (!isNaN(parsed)) dueDateValue = parsed;
+        }
+      }
+
+      // IDs: normalize and validate (don't include invalid/empty ones)
+      const assignedToRaw = parseCellText(row.getCell(7));
+      const assignedTo = parseObjectIdList(assignedToRaw); // returns array or undefined
+
+      const customerRaw = parseCellText(row.getCell(8));
+      const customer = parseObjectIdSingle(customerRaw);
+
+      const productRaw = parseCellText(row.getCell(9));
+      const product = parseObjectIdSingle(productRaw);
+
+      // Build task object, only include fields that are present/valid
       const task = {
-        title: row.getCell(1).value,
-        description: row.getCell(2).value,
-        priority: row.getCell(3).value || "medium",
-        status: row.getCell(4).value || "pending",
-        location: row.getCell(5).value,
-        dueDate: new Date(row.getCell(6).value),
-        assignedTo: row.getCell(7).value, // Worker ID
-        customer: row.getCell(8).value, // Customer ID
-        product: row.getCell(9).value, // Product ID
+        title,
+        description,
+        priority,
+        status,
+        location,
         assignedBy: req.admin._id,
       };
 
+      if (dueDateValue) task.dueDate = dueDateValue;
+      if (assignedTo) task.assignedTo = assignedTo;
+      if (customer) task.customer = customer;
+      if (product) task.product = product;
+
+      // only push when minimal required fields exist (you used title & location earlier)
       if (task.title && task.location) {
         tasks.push(task);
       }
     });
+
+    if (!tasks.length) {
+      return res.status(400).json({ error: "No valid tasks found in file" });
+    }
 
     const createdTasks = await Task.insertMany(tasks);
     res.status(201).json({

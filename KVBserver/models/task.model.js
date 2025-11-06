@@ -27,26 +27,21 @@ const taskSchema = new mongoose.Schema(
     assignedTo: [
       {
         type: mongoose.Schema.Types.ObjectId,
-        ref: "Worker",
       },
     ],
     assignedBy: {
       type: mongoose.Schema.Types.ObjectId,
-      ref: "Admin",
       required: true,
     },
     customer: {
       type: mongoose.Schema.Types.ObjectId,
-      ref: "Customer",
       required: true,
     },
     product: {
       type: mongoose.Schema.Types.ObjectId,
-      ref: "Product",
     },
     location: {
       type: String,
-      required: false,
     },
     attachments: [
       {
